@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "/Users/poms/Documents/full_stack/loviers_beauty_hub/apps/backend/app/.venv/bin/python3",
+  "python.analysis.extraPaths": ["/Users/poms/Documents/full_stack/loviers_beauty_hub/apps/backend/app/.venv/lib/python3.13/site-packages"]
+}

@@ -3,3 +3,10 @@ pymongo
 python-dotenv
 python-multipart
 bcrypt
+cloudinary
+PyJWT
+pandas
+python-magic
+motor
+boto3
+requests
