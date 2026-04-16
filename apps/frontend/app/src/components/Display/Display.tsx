@@ -20,7 +20,6 @@ import {
 import { useEffect, useState, useRef } from 'react'
 
 
-// const items = Array.from({ length: 5 })
 
 const Display = () => {
   const navigate = useNavigate()

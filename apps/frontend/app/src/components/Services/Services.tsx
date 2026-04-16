@@ -1,23 +1,46 @@
-'use client';
-
-import { useState } from 'react';
 import { Box, Flex, Text, Image, VStack, Heading, Link } from '@chakra-ui/react';
+import {
+  fetchMainServices,
+} from '../../api/client'
+import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 // import { robotoSerif, montserrat } from '@/app/font'; 
 // import NextLink from 'next/link';
 
-const slides = [
-  { id: 1, img: '/assets/3.png', title: 'Braids', category: 'Services' },
-  { id: 2, img: '/assets/2.png', title: 'Training', category: 'Services' },
-  { id: 3, img: '/assets/1.png', title: 'Lash', category: 'Services' },
-  { id: 4, img: '/assets/4.png', title: 'Extras', category: 'Services' },
-];
 
 export default function WghSlider() {
-  const [activeSlide, setActiveSlide] = useState(2);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const navigate = useNavigate()
+  const [services, setServices] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState<{text: string, type: "error" | "success"} | null>(null)
+  const showMessage = (text: string, type: "error" | "success") => {
+    setStatusMessage({text, type})
+    setTimeout(() => setStatusMessage(null), 5000)
+  }
+  
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchMainServices()
+        console.log(data)
+        setServices(data)
+      } catch (error) {
+        showMessage(`Error fetching services: ${error}`, "error")
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+  
+   
+  if (loading || !services?.length) return null
 
   return (
-    <Box className="container" py={10} overflow="hidden">
-        <Heading>
+    <Box className="container"  overflow="hidden">
+        <Heading pl="4">
             Services
         </Heading>
       <Flex 
@@ -27,13 +50,13 @@ export default function WghSlider() {
         h="400px" 
         perspective="400px"
       >
-        {slides.map((slide) => {
-          const isActive = activeSlide === slide.id;
-          const offset = slide.id - activeSlide;
+        {services.map((image: any, index: number) => {
+          const isActive = activeSlide === index;
+          const offset = index - activeSlide;
 
           return (
             <Box
-              key={slide.id}
+              key={image.id}
               position="absolute"
               transition="all 0.5s ease-in-out"
               cursor="pointer"
@@ -44,9 +67,9 @@ export default function WghSlider() {
               `}
               zIndex={isActive ? 10 : 5 - Math.abs(offset)}
               opacity={Math.abs(offset) > 2 ? 0 : 1}
+              onClick={() => setActiveSlide(index)}
             >
-              <Link
-              href={`/services/${slide.id}`} style={{ textDecoration: 'none' }}>
+              
                 <Box
                   bg="white"
                   borderRadius="lg"
@@ -54,27 +77,18 @@ export default function WghSlider() {
                   overflow="hidden"
                   w="180px"
                 >
-                  <Image src={slide.img} alt={slide.title} h="150px" w="100%" objectFit="cover" />
+                  <Image src={image.image_url} alt={image.service} h="180px" w="100%" objectFit="cover" objectPosition="top" />
                   
-                  <VStack p={4} align="start">
-                    <Text 
-                      fontWeight="bold" 
-                    //   fontFamily={robotoSerif.style.fontFamily}
-                      fontSize="lg"
-                    >
-                      {slide.title}
-                    </Text>
-                    <Text 
-                      fontSize="sm" 
-                      color="gray.500"
-                    //   fontFamily={montserrat.style.fontFamily}
-                      fontStyle="italic"
-                    >
-                      {slide.category}
-                    </Text>
-                  </VStack>
+                  <Text 
+                    fontWeight="bold"
+                    p="3" 
+                  //   fontFamily={robotoSerif.style.fontFamily}
+                    fontSize="lg"
+                  >
+                    {image.service}
+                  </Text>
+                  
                 </Box>
-              </Link>
             </Box>
           );
         })}
