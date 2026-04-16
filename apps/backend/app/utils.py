@@ -17,7 +17,7 @@ network_prefix = {
     "telecel": ["020", "050"],
 }
 allowed_video_types = ["video/mp4", "video/webm", "video/quicktime"]
-allowed_image_types = ["image/jpeg", "image/png", "image/gif"]
+allowed_image_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
 allowed_types = {
     "video": allowed_video_types,

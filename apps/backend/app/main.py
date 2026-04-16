@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 import cloudinary
@@ -43,7 +44,13 @@ cloudinary.config(
 
 app = FastAPI(title="Loviers Beauty Hub API", lifespan=lifespan)
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 @app.get("/")
 def home():

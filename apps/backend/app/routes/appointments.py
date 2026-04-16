@@ -166,4 +166,5 @@ async def get_all_appointments(query="", name="", email="", limit=10, skip=0):
     ).to_list(length=int(limit))
     
     return {"data": list(map(replace_appointment_id, appointment))}
+
   
