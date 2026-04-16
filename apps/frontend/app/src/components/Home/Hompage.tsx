@@ -1,4 +1,4 @@
-import {Stack, Heading, Flex, Text} from '@chakra-ui/react'
+import {Stack} from '@chakra-ui/react'
 import Navbar from '../Navbar/Navbar'
 import Display from '../Display/Display'
 import Services from '../Services/Services'

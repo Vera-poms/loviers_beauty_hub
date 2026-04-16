@@ -1,5 +1,3 @@
-'use client'
-
 import { useNavigate } from 'react-router-dom'
 import 
 { Carousel, 
@@ -13,30 +11,58 @@ import
 import {
   LuChevronLeft,
   LuChevronRight,
-  LuClock,
   LuPause,
   LuPlay,
 } from "react-icons/lu"
+import {
+  fetchMainServices,
+} from '../../api/client'
+import { useEffect, useState, useRef } from 'react'
 
-const items = Array.from({ length: 5 })
+
+// const items = Array.from({ length: 5 })
 
 const Display = () => {
   const navigate = useNavigate()
+  const [services, setServices] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState<{text: string, type: "error" | "success"} | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const showMessage = (text: string, type: "error" | "success") => {
+    setStatusMessage({text, type})
+    setTimeout(() => setStatusMessage(null), 5000)
+  }
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchMainServices()
+        setServices(data)
+      } catch (error) {
+        console.error("Error fetching services:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
 
   const handleClick = () => {
     navigate("/appointments/book")
   }
 
+  if (loading || !services?.videos?.length) return null
 
   return (
     <Carousel.Root
-      autoplay={{ delay: 1000000 }}
-      slideCount={items.length}
+      autoplay={{ delay: 100000 }}
+      slideCount={services.video.length}
       mx="auto"
       w="100vw"
     >
       <Carousel.ItemGroup>
-        {items.map((_, index) => (
+        {services.video.map((video: any, index: number) => (
           <Carousel.Item key={index} index={index}>
             <Box 
             w="100%" 
@@ -44,6 +70,17 @@ const Display = () => {
             bg="gray.200"
             py="10px"
             pl="20px">
+              <video 
+              src={video.video_url}
+              autoPlay
+              loop
+              muted
+              ref={videoRef}
+              playsInline
+              width="100%"
+              height="100%"
+              style={{objectFit: "contain"}}
+              />
               <Flex
               direction="column"
               justifyContent="flex-end"
@@ -95,6 +132,8 @@ const Display = () => {
         </Carousel.NextTrigger>
       </Carousel.Control>
     </Carousel.Root>
+
+
   )
 }
 
