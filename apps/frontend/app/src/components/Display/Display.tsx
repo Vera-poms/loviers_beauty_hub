@@ -40,7 +40,7 @@ const Display = () => {
         const data = await fetchMainServices()
         setServices(data)
       } catch (error) {
-        console.error("Error fetching services:", error)
+        showMessage(`Error fetching services: ${error}`, "error")
       } finally {
         setLoading(false)
       }
@@ -52,24 +52,24 @@ const Display = () => {
     navigate("/appointments/book")
   }
 
-  if (loading || !services?.videos?.length) return null
+  if (loading || !services?.length) return null
 
   return (
     <Carousel.Root
       autoplay={{ delay: 100000 }}
-      slideCount={services.video.length}
-      mx="auto"
+      slideCount={services.length}
+      maxW="100p%"
       w="100vw"
     >
       <Carousel.ItemGroup>
-        {services.video.map((video: any, index: number) => (
-          <Carousel.Item key={index} index={index}>
+        {services.map((video: any, index: number) => (
+          <Carousel.Item key={video.id} index={index}>
             <Box 
+            position="relative"
             w="100%" 
             h="300px" 
             bg="gray.200"
-            py="10px"
-            pl="20px">
+            overflow="hidden">
               <video 
               src={video.video_url}
               autoPlay
@@ -79,9 +79,12 @@ const Display = () => {
               playsInline
               width="100%"
               height="100%"
-              style={{objectFit: "contain"}}
+              style={{objectFit: "cover"}}
               />
               <Flex
+              position="absolute"
+              bottom="10px"
+              left="20px"
               direction="column"
               justifyContent="flex-end"
               alignItems="flex-start"
@@ -91,11 +94,13 @@ const Display = () => {
                 pl="4px"
                 w="250px">
                   <Heading
-                  fontSize="22px">
+                  fontSize="22px"
+                  color="black">
                     Loviers Beauty Hub / LashnMore
                   </Heading>
                   <Text
-                  fontSize="12px">
+                  fontSize="12px"
+                  color="black">
                     Expert braiding and lash services to help you look your best
                   </Text>
                 </Box>
