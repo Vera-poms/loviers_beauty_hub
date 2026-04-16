@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import cloudinary
 from routes.services import services_router
 from routes.auth import auth_router
+from routes.appointments import appointments_router
 from motor.motor_asyncio import AsyncIOMotorClient
 import pandas as pd
 from contextlib import asynccontextmanager
@@ -52,3 +53,4 @@ def home():
 
 app.include_router(auth_router)
 app.include_router(services_router)
+app.include_router(appointments_router)
