@@ -11,21 +11,27 @@ from contextlib import asynccontextmanager
 load_dotenv()
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "services.csv")
+csv_path = os.path.join(base_dir, "loviers_services.csv")
+uri = os.getenv("MONGO_URI")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.mongodb_client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
+    app.state.mongodb_client = AsyncIOMotorClient(uri)
 
-    try:
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found at {csv_path}")
-        
-        df = pd.read_csv(csv_path)
-        df.columns = df.columns.str.strip()
-        app.state.services = df.groupby("MAIN CAT")["SUB CAT"].apply(list).to_dict()
-    except:
-        app.state.services = {}
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"CSV file not found at: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+    df.columns = df.columns.str.strip()
+
+   
+    required_cols = {"MAIN CAT", "SUB CAT"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"CSV is missing expected columns: {missing}. Found: {list(df.columns)}")
+
+    app.state.services = df.groupby("MAIN CAT")["SUB CAT"].apply(list).to_dict()
+
     yield
 
 cloudinary.config(
@@ -44,5 +50,5 @@ def home():
         "message": "Welcome to Loviers Beauty Hub API!"
         }
 
-app.include_router(services_router)
 app.include_router(auth_router)
+app.include_router(services_router)

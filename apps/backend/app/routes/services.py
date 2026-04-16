@@ -11,10 +11,12 @@ from fastapi import (
 from typing import Annotated
 from enum import Enum
 from dependencies.authn import is_authenticated
-from db import services_collection
+from db import main_services_collection, sub_services_collection
 import pandas as pd
-from utils import validate_file, replace_service_id
+from utils import validate_file, replace_service_id, valid_id
 import cloudinary.uploader
+from dependencies.authz import has_role
+from bson.objectid import ObjectId
 
 services_router = APIRouter(tags=["Services"])
 
@@ -45,9 +47,169 @@ async def get_categories(request: Request):
         )
     return services
 
+@services_router.post("/services/main", dependencies=[Depends(has_role("admin"))])
+async def upload_main_service(
+    request: Request,
+    user_id: Annotated[str, Depends(is_authenticated)],
+    service: ServiceType,
+    image: UploadFile = File(),
+    video: UploadFile = File(None),
+):
+    service_count = main_services_collection.count_documents(filter={"$and": [
+        {"service": service},
+    ]})
 
-@services_router.post("/services")
-async def upload_service(
+    if service_count > 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Service already exist!")
+    
+    available_services = getattr(request.app.state, "services", None)
+    if not available_services:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Services not loaded"
+        )
+    
+    if service not in available_services:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Invalid service: {service.value}"
+        )
+    
+    await validate_file(image, "image")
+    if video:
+        await validate_file(video, "video")
+
+    image_bytes = await image.read()
+    video_bytes = await video.read() if video else None
+
+    try:
+        image_upload = cloudinary.uploader.upload(image_bytes, resource_type="image")
+        image_url = image_upload.get("secure_url")
+
+        video_upload = cloudinary.uploader.upload(video_bytes, resource_type="video") if video_bytes else None
+        video_url = video_upload.get("secure_url") if video_upload else None
+    except Exception as e:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"File upload failed: {str(e)}"
+        )
+    
+    main_services_collection.insert_one({
+        "user_id": user_id,
+        "service": service.value,
+        "image_url": image_url,
+        "video_url": video_url,
+    })
+
+    return {
+        "message": "Service uploaded successfully"
+    }
+
+@services_router.patch("/services/main/{service_id}", dependencies=[Depends(has_role("admin"))])
+async def update_main_service(
+    request: Request,
+    service_id,
+    user_id: Annotated[str, Depends(is_authenticated)],
+    service: ServiceType | None = None,
+    image: UploadFile = File(None),
+    video: UploadFile = File(None),
+):
+    service_count = main_services_collection.find_one({
+        "_id": ObjectId(service_id)
+    })
+    if not service_count:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Service with id: {service_id} not found!")
+    
+    available_services = getattr(request.app.state, "services", None)
+    if not available_services:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Services not loaded"
+        )
+    
+    if service:
+        if service not in available_services:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid service: {service}"
+            )
+    if image:
+        await validate_file(image, "image")
+    if video:
+        await validate_file(video, "video")
+
+    image_bytes = await image.read() if image else None
+    video_bytes = await video.read() if video else None
+
+    try:
+        if image_bytes:
+            image_upload = cloudinary.uploader.upload(image_bytes, resource_type="image")
+            image_url = image_upload.get("secure_url")
+
+        if video:
+            video_upload = cloudinary.uploader.upload(video_bytes, resource_type="video") if video_bytes else None
+            video_url = video_upload.get("secure_url") if video_upload else None
+    except Exception as e:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"File upload failed: {str(e)}"
+        )
+    
+    main_services_collection.update_one(
+        {"_id": ObjectId(service_id)},
+        {"$set": {
+            "user_id": user_id,
+            "service": service or service_count["service"],
+            "image_url": image_url if image_bytes is not None else service_count["image_url"],
+            "video_url": video_url if video_bytes is not None else service_count["video_url"],
+        }
+    })
+
+    return {
+        "message": "Service uploaded successfully"
+    }
+
+@services_router.get("/services/main")
+def get_main_services(query="", limit=10, skip=0):
+    services = main_services_collection.find(
+        filter={
+            "service": {"$regex": query, "$options": "i"},
+        },
+        limit=int(limit),
+        skip=int(skip)
+    ).to_list(length=int(limit))
+
+    return {"data": list(map(replace_service_id, services))}
+
+@services_router.delete("/services/main/{service_id}", dependencies=[Depends(has_role("admin"))])
+def delete_main_service(
+    user_id: Annotated[str, Depends(is_authenticated)],
+    service_id
+):
+    valid_id(service_id)
+    service = main_services_collection.find_one({
+        "_id": ObjectId(service_id)})
+    
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Service not found!")
+
+    main_services_collection.delete_one({"_id": ObjectId(service_id)})
+    return {"message": "Service removed successfully"}
+
+@services_router.get("/services/main/{service_id}", dependencies=[Depends(has_role("admin"))])
+def get_one_main_service(service_id, user_id: Annotated[str, Depends(is_authenticated)]):
+    valid_id(service_id)
+    service = main_services_collection.find_one({"_id": ObjectId(service_id)})
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return {"data": replace_service_id(service)}
+
+@services_router.post("/services/subcategory", dependencies=[Depends(has_role("admin"))])
+async def upload_sub_service(
     request: Request,
     title: Annotated[str, Form()],
     user_id: Annotated[str, Depends(is_authenticated)],
@@ -58,9 +220,10 @@ async def upload_service(
     image: UploadFile = File(),
     video: UploadFile = File(None),
 ):
-    service_count = services_collection.count_documents(filter={"$and": [
+    service_count = sub_services_collection.count_documents(filter={"$and": [
         {"title": title},
     ]})
+
     if service_count > 0:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"Service with title: {title} already exist!")
@@ -85,25 +248,29 @@ async def upload_service(
             f"Invalid service: {service.value}"
         )
     
+    await validate_file(image, "image")
     if video:
         await validate_file(video, "video")
 
+    image_bytes = await image.read()
+    video_bytes = await video.read() if video else None
+
     try:
-        image_upload = cloudinary.uploader.upload(image)
+        image_upload = cloudinary.uploader.upload(image_bytes, resource_type="image")
         image_url = image_upload.get("secure_url")
 
-        video_upload = cloudinary.uploader.upload(video)
-        video_url = video_upload.get("secure_url") if video else None
+        video_upload = cloudinary.uploader.upload(video_bytes, resource_type="video") if video_bytes else None
+        video_url = video_upload.get("secure_url") if video_upload else None
     except Exception as e:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"File upload failed: {str(e)}"
         )
     
-    services_collection.insert_one({
+    sub_services_collection.insert_one({
         "title": title,
         "user_id": user_id,
-        "price": price,
+        "price": f"{price:.2f}",
         "service": service.value,
         "sub_category": sub_category,
         "description": description,
@@ -114,3 +281,126 @@ async def upload_service(
     return {
         "message": "Service uploaded successfully"
     }
+
+@services_router.patch("/services/subcategory/{service_id}", dependencies=[Depends(has_role("admin"))])
+async def update_sub_service(
+    request: Request,
+    service_id,
+    user_id: Annotated[str, Depends(is_authenticated)],
+    title: Annotated[str | None, Form()] = None,
+    price: Annotated[float | None, Form()] = None,
+    service: ServiceType | None = None,
+    sub_category: Annotated[str | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    image: UploadFile = File(None),
+    video: UploadFile = File(None),
+):
+    service_count = sub_services_collection.find_one({
+        "_id": ObjectId(service_id),
+    })
+
+    if not service_count:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Service with id: {service_id} not found!")
+    
+    available_services = getattr(request.app.state, "services", None)
+    if not available_services:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Services not loaded"
+        )
+    
+    if service:
+        valid_subs = available_services.get(service)
+        if sub_category not in valid_subs:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid sub-category: {sub_category} for service: {service}"
+            )
+        
+        if service not in available_services:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid service: {service}"
+            )
+    if image:
+        await validate_file(image, "image")
+    if video:
+        await validate_file(video, "video")
+
+    image_bytes = await image.read() if image else None
+    video_bytes = await video.read() if video else None
+
+    try:
+        if image_bytes:
+            image_upload = cloudinary.uploader.upload(image_bytes, resource_type="image")
+            image_url = image_upload.get("secure_url")
+
+        if video:
+            video_upload = cloudinary.uploader.upload(video_bytes, resource_type="video") if video_bytes else None
+            video_url = video_upload.get("secure_url") if video_upload else None
+    except Exception as e:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"File upload failed: {str(e)}"
+        )
+    
+    sub_services_collection.update_one(
+        {"_id": ObjectId(service_id)},
+        {"$set": {
+            "title": title or service_count["title"],
+            "user_id": user_id,
+            "price": f"{price:.2f}" if price is not None else service_count["price"],
+            "service": service or service_count["service"],
+            "sub_category": sub_category or service_count["sub_category"],
+            "description": description or service_count["description"],
+            "image_url": image_url if image_bytes is not None else service_count["image_url"],
+            "video_url": video_url if video_bytes is not None else service_count["video_url"],
+        }
+    })
+
+    return {
+        "message": "Service updated successfully"
+    }
+
+@services_router.get("/services/subcategory")
+def get_sub_services(query="", limit=10, skip=0):
+    services = sub_services_collection.find(
+        filter={
+            "$or": [
+                {"title": {"$regex": query, "$options": "i"}},
+                {"description": {"$regex": query, "$options": "i"}},
+                {"service": {"$regex": query, "$options": "i"}},
+                {"sub_category": {"$regex": query, "$options": "i"}},
+            ],
+        },
+        limit=int(limit),
+        skip=int(skip)
+    ).to_list(length=int(limit))
+
+    return {"data": list(map(replace_service_id, services))}
+
+@services_router.delete("/services/subcategory/{service_id}", dependencies=[Depends(has_role("admin"))])
+def delete_sub_service(
+    user_id: Annotated[str, Depends(is_authenticated)],
+    service_id
+):
+    valid_id(service_id)
+    service = sub_services_collection.find_one({
+        "_id": ObjectId(service_id)})
+    
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Service not found!")
+
+    sub_services_collection.delete_one({"_id": ObjectId(service_id)})
+    return {"message": "Service removed successfully"}
+
+@services_router.get("/services/subcategory/{service_id}", dependencies=[Depends(has_role("admin"))])
+def get_one_sub_service(service_id, user_id: Annotated[str, Depends(is_authenticated)]):
+    valid_id(service_id)
+    service = sub_services_collection.find_one({"_id": ObjectId(service_id)})
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return {"data": replace_service_id(service)}
