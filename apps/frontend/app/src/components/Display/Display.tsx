@@ -55,7 +55,7 @@ const Display = () => {
 
   return (
     <Carousel.Root
-      autoplay={{ delay: 100000 }}
+      autoplay={{ delay: 7000 }}
       slideCount={services.length}
       maxW="100p%"
       w="100vw"
@@ -66,7 +66,7 @@ const Display = () => {
             <Box 
             position="relative"
             w="100%" 
-            h="300px" 
+            h={{base: "300px", sm: "400px", md: "600px"}} 
             bg="gray.200"
             overflow="hidden">
               <video 
@@ -87,19 +87,23 @@ const Display = () => {
               direction="column"
               justifyContent="flex-end"
               alignItems="flex-start"
-              h="100%"
-              gap="4">
+              h={{ sm: "110px"}}
+              py="2"
+              px="3"
+              rounded="lg"
+              w={{base:"80%"}}
+                bg="blackAlpha.400"
+              >
                 <Box
-                pl="4px"
-                w="250px">
+                color="white">
                   <Heading
-                  fontSize="22px"
-                  color="black">
+                  fontSize={{base:"18px", sm: "22px"}}
+                  >
                     Loviers Beauty Hub / LashnMore
                   </Heading>
                   <Text
-                  fontSize="12px"
-                  color="black">
+                  fontSize={{base:"11px", sm: "13px"}}
+                  >
                     Expert braiding and lash services to help you look your best
                   </Text>
                 </Box>

@@ -7,11 +7,17 @@ import Footer from '../Footer/Footer'
 
 const Hompage = () => {
   return (
-    <Stack>
+    <Stack
+    minH="100vh"
+    
+    justify="space-between"
+    >
+      <Stack>
         <Navbar />
         <Display />
         <Services />
-        <Footer />
+      </Stack>
+      <Footer />
     </Stack>
   )
 }

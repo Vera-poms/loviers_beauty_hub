@@ -1,3 +1,5 @@
+import json
+
 from fastapi import (
     APIRouter, 
     Depends, 
@@ -8,7 +10,7 @@ from fastapi import (
     Request,
     UploadFile
 )
-from typing import Annotated
+from typing import Annotated, Optional
 from enum import Enum
 from dependencies.authn import is_authenticated
 from db import main_services_collection, sub_services_collection
@@ -17,10 +19,31 @@ from utils import validate_file, replace_service_id, valid_id
 import cloudinary.uploader
 from dependencies.authz import has_role
 from bson.objectid import ObjectId
+from pydantic import BaseModel, field_validator
 
 services_router = APIRouter(tags=["Services"])
 
 services = {}
+
+class Addon(BaseModel):
+    name: str
+    price: float
+ 
+    @field_validator("price")
+    @classmethod
+    def price_must_be_positive(cls, v: float):
+        if v < 0:
+            raise ValueError("Addon price must be non-negative")
+        return round(v, 2)
+ 
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v: str):
+        v = v.strip()
+        if not v:
+            raise ValueError("Addon name must not be empty")
+        return v
+
 
 class ServiceType(str, Enum):
     BRAIDING = "Braiding"
@@ -28,6 +51,29 @@ class ServiceType(str, Enum):
     TRAINING = "Training"
     PIERCINGS = "Piercings"
     EXTRAS = "Extras"
+
+def parse_addons(raw: str | None) -> list[Addon]:
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="`addons` must be a valid JSON array string.",
+        )
+    if not isinstance(data, list):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="`addons` must be a JSON array.",
+        )
+    try:
+        return [Addon(**item) for item in data]
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid addon object: {exc}",
+        )
 
 def load_service_mapping(file_path: str):
     df = pd.read_excel(file_path)
@@ -52,6 +98,7 @@ async def upload_main_service(
     request: Request,
     user_id: Annotated[str, Depends(is_authenticated)],
     service: ServiceType,
+    braiding_hours: Annotated[str, Form()],
     image: UploadFile = File(),
     video: UploadFile = File(None),
 ):
@@ -100,6 +147,8 @@ async def upload_main_service(
         "service": service.value,
         "image_url": image_url,
         "video_url": video_url,
+        "braiding_hours": braiding_hours,
+
     })
 
     return {
@@ -111,6 +160,7 @@ async def update_main_service(
     request: Request,
     service_id,
     user_id: Annotated[str, Depends(is_authenticated)],
+    braiding_hours: Annotated[str | None, Form()] = None,
     service: ServiceType | None = None,
     image: UploadFile = File(None),
     video: UploadFile = File(None),
@@ -162,6 +212,7 @@ async def update_main_service(
         {"$set": {
             "user_id": user_id,
             "service": service or service_count["service"],
+            "braiding_hours": braiding_hours or service_count["braiding_hours"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }
@@ -213,13 +264,33 @@ async def upload_sub_service(
     request: Request,
     title: Annotated[str, Form()],
     user_id: Annotated[str, Depends(is_authenticated)],
-    price: Annotated[float, Form()],
     service: ServiceType,
     sub_category: Annotated[str, Form()],
+    braiding_hours: Annotated[str, Form()],
+    addons_required: Annotated[bool, Form()] = False,
+    price: Annotated[Optional[float], Form()] = None,
+    addons: Annotated[Optional[str], Form()] = None,
     description: Annotated[str | None, Form()] = None,
     image: UploadFile = File(),
     video: UploadFile = File(None),
 ):
+    parsed_addons = parse_addons(addons)
+ 
+    if addons_required:
+        if not parsed_addons:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"At least one addon is required when {addons_required} is True.",
+            )
+        
+        price = None
+    else:
+        if price is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="`price` is required when `addons_required` is False.",
+            )
+        
     service_count = sub_services_collection.count_documents(filter={"$and": [
         {"title": title},
     ]})
@@ -270,10 +341,13 @@ async def upload_sub_service(
     sub_services_collection.insert_one({
         "title": title,
         "user_id": user_id,
-        "price": f"{price:.2f}",
+        "price": f"{price:.2f}" if price is not None else None,
         "service": service.value,
+        "addons_required": addons_required,
+        "addons": [a.model_dump() for a in parsed_addons],
         "sub_category": sub_category,
         "description": description,
+        "braiding_hours": braiding_hours,
         "image_url": image_url,
         "video_url": video_url,
     })
@@ -287,14 +361,33 @@ async def update_sub_service(
     request: Request,
     service_id,
     user_id: Annotated[str, Depends(is_authenticated)],
+    braiding_hours: Annotated[str | None, Form()] = None,
     title: Annotated[str | None, Form()] = None,
-    price: Annotated[float | None, Form()] = None,
+    price: Annotated[Optional[float], Form()] = None,
+    addons: Annotated[Optional[str], Form()] = None,
+    addons_required: Annotated[bool, Form()] = False,
     service: ServiceType | None = None,
     sub_category: Annotated[str | None, Form()] = None,
     description: Annotated[str | None, Form()] = None,
     image: UploadFile = File(None),
     video: UploadFile = File(None),
 ):
+    parsed_addons = parse_addons(addons)
+ 
+    if addons_required:
+        if not parsed_addons:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"At least one addon is required when `addons_required` is {addons_required}.",
+            )
+        price = None
+    else:
+        if price is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"`price` is required when `addons_required` is {addons_required}.",
+            )
+        
     service_count = sub_services_collection.find_one({
         "_id": ObjectId(service_id),
     })
@@ -352,8 +445,11 @@ async def update_sub_service(
             "user_id": user_id,
             "price": f"{price:.2f}" if price is not None else service_count["price"],
             "service": service or service_count["service"],
+            "addons_required": addons_required or service_count["addons_required"],
+            "addons": [a.model_dump() for a in parsed_addons] if parsed_addons else service_count.get("addons", []),
             "sub_category": sub_category or service_count["sub_category"],
             "description": description or service_count["description"],
+            "braiding_hours": braiding_hours or service_count["braiding_hours"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }

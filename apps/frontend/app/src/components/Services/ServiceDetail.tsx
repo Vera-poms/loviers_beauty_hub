@@ -1,10 +1,14 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Flex, Text, Image, Heading, IconButton, Carousel, Button, Stack } from '@chakra-ui/react';
 import { ServiceCard } from './ServiceCard';
 // import { robotoSerif, montserrat } from '@/app/font';
 import { LuChevronLeft, LuChevronRight, LuPause, LuPlay } from 'react-icons/lu';
+import Navbar from '../Navbar/Navbar';
+import {
+  fetchMainServices,
+  fetchSubServices
+} from '../../api/client'
+
 
 interface Subcategory {
     id: number;
@@ -13,63 +17,90 @@ interface Subcategory {
 }
 
 interface ServiceData {
-    id: number;
-    image: string | null;
-    video: string | null;
-    title: string;
-    description: string;
-    braidingHours: string;
+  id: number;
+  image: string | null;
+  video: string | null;
+  title: string;
+  description: string;
+  braidingHours: string;
 }
 
 interface ServiceDetailsProps {
-    service: ServiceData;
-    subcategories: Subcategory[];
+  service: ServiceData;
+  subcategories: Subcategory[];
 }
 
 const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [services, setServices] = useState<any>(null)
+  const [subServices, setSubServices] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState<{text: string, type: "error" | "success"} | null>(null)
+  const showMessage = (text: string, type: "error" | "success") => {
+    setStatusMessage({text, type})
+    setTimeout(() => setStatusMessage(null), 5000)
+  }
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const data = await fetchMainServices()
+        const subData = await fetchSubServices()
+        console.log(subData)
+        setServices(data)
+        setSubServices(subData)
+      } catch (error) {
+        showMessage(`Error fetching services: ${error}`, "error")
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  if (loading || !services?.length || !subServices?.length) return null
 
   return (
     <Box>
+      <Navbar />
         <Carousel.Root
-          autoplay={{ delay: 5000 }}
-          slideCount={3}
+          autoplay={{ delay: 7000 }}
+          slideCount={services.length}
           mx="auto"
           w="100vw"
         >
           <Carousel.ItemGroup>
-            <Carousel.Item index={0}>
-              <Box w="100%" h="300px" bg="black" position="relative" overflow="hidden">
-                {service.video ? (
-                  <video
-                    src={service.video}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : service.image ? (
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    w="100%"
-                    h="100%"
-                    objectFit="cover"
-                  />
-                ) : (
-                  <Box w="100%" h="100%" bg="gray.200" />
-                )}
+            {services.map((video: any, index: number) => (
+          <Carousel.Item key={video.id} index={index}>
+              <Box 
+              position="relative"
+              w="100%" 
+              h={{base: "300px", sm: "400px", md: "600px"}} 
+              bg="gray.200"
+              overflow="hidden">
+                
+                <video
+                  src={video.video_url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  width="100%"
+                  height="100%"
+                  style={{
+                    objectFit: 'cover',
+                  }}
+                />
+               
                 <Flex
                   position="absolute"
-                  bottom="0"
-                  left="0"
-                  right="0"
+                  bottom="10px"
+                 left="20px"
+                 h={{ sm: "80px"}}
                   p="4"
+                  rounded="lg"
+              w={{base:"50%"}}
                   bg="blackAlpha.600"
                   direction="column"
                   gap="1"
@@ -79,7 +110,7 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
                     color="white"
                     // fontFamily={robotoSerif.style.fontFamily}
                   >
-                    {service.title}
+                    {video.service}
                   </Heading>
                   <Text fontSize="12px" color="whiteAlpha.800">
                     {service.description}
@@ -87,6 +118,7 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
                 </Flex>
               </Box>
             </Carousel.Item>
+            ))}
           </Carousel.ItemGroup>
 
           <Carousel.Control justifyContent="center" gap="4">
@@ -111,17 +143,18 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
           </Carousel.Control>
         </Carousel.Root>
 
-        <Box px="4" py="4">
+      {services.map((service: any) => (
+        <Box px="4"  key={service.id}>
           <Text
             fontSize="lg"
             // fontFamily={montserrat.style.fontFamily}
           >
-            {service.braidingHours}
+            {service.braiding_hours}
           </Text>
         </Box>
-
+        ))}
         <Box px="4" py="4">
-          <Flex gap="2" overflowX="auto" pb="2">
+          <Flex gap="2" overflowX="auto" >
             <Button
               size="sm"
               variant={activeTab === 'all' ? 'solid' : 'outline'}
@@ -130,16 +163,16 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
             >
               All
             </Button>
-            {subcategories.map((sub) => (
+            {subServices.map((sub: any) => (
               <Button
                 key={sub.id}
                 size="sm"
-                variant={activeTab === sub.name ? 'solid' : 'outline'}
-                onClick={() => setActiveTab(sub.name)}
+                variant={activeTab === sub.sub_category ? 'solid' : 'outline'}
+                onClick={() => setActiveTab(sub.sub_category)}
                 // fontFamily={montserrat.style.fontFamily}
                 whiteSpace="nowrap"
               >
-                {sub.name}
+                {sub.sub_category}
               </Button>
             ))}
           </Flex>
@@ -147,16 +180,14 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
 
         
         <Stack px="4" py="4" gap={"4"}>
+          {subServices.map((sub: any) => (
           <ServiceCard
-            image={service.image || ''}
-            title={service.title}
-            description={service.description}
-            addons={subcategories.map((sub) => ({
-              id: sub.id,
-              title: sub.name,
-              price: Math.floor(Math.random() * 50) + 10 
-            }))}
+            image={sub.image_url}
+            title={sub.title}
+            description={sub.description}
+            braidingHours={sub.braiding_hours}
           />
+      ))}
         </Stack>
     </Box>
   )
