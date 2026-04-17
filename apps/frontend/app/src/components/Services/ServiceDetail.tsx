@@ -186,6 +186,7 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
             title={sub.title}
             description={sub.description}
             braidingHours={sub.braiding_hours}
+            addons={sub.addons}
           />
       ))}
         </Stack>

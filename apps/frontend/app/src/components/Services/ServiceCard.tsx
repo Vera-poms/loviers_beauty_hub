@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { Box, Card, Image, Heading, Text, Collapsible, Button, Flex, Stack } from '@chakra-ui/react';
 import {LuClock} from "react-icons/lu"
 
 interface Addon {
-  id: number;
-  title: string;
+  name: string;
   price: number;
 }
 
@@ -14,10 +12,16 @@ interface ServiceCardProps {
   description: string;
   braidingHours?: string
   addons?: Addon[];
+  addonsRequired?: boolean;
 }
 
-export function ServiceCard({ image, title, description, braidingHours, addons }: ServiceCardProps) {
-  const [showAddons, setShowAddons] = useState(false);
+export function ServiceCard({ 
+  image, 
+  title, 
+  description, 
+  braidingHours, 
+  addons = [],
+ }: ServiceCardProps) {
 
   return (
     <Card.Root maxW="sm" mb={4}>
@@ -44,13 +48,13 @@ export function ServiceCard({ image, title, description, braidingHours, addons }
         </Collapsible.Trigger>
         <Collapsible.Content>
             <Stack gap={2} mt={2}>
-                {addons?.map((addon) => (
-                <Flex key={addon.id} align="center" justify="space-between" p={2} borderWidth={1} borderRadius="md">
+                {addons?.map((addon, index:number) => (
+                <Flex key={index} align="center" justify="space-between" p={2} borderWidth={1} borderRadius="md">
                     <Box>
-                    <Text fontWeight="medium">{addon.title}</Text>
+                    <Text fontWeight="medium">{addon.name}</Text>
                     <Text fontSize="sm" color="gray.500">${addon.price.toFixed(2)}</Text>
                     </Box>
-                    <Button size="xs" colorScheme="blue">Add</Button>
+                    <Button size="xs">Book</Button>
                 </Flex>
                 ))}
             </Stack>

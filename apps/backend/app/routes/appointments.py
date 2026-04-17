@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import (
     APIRouter, 
     File, 
@@ -7,8 +9,8 @@ from fastapi import (
     Request,
     UploadFile
 )
-from typing import Annotated
-from db import appointments_collection
+from typing import Annotated, Optional
+from db import appointments_collection, sub_services_collection
 from utils import (
     validate_file, 
     generate_verification_code, 
@@ -25,6 +27,8 @@ from dotenv import load_dotenv
 from email.message import EmailMessage
 import smtplib
 import hashlib
+from .services import parse_addons
+from datetime import datetime, date
 
 load_dotenv()
 
@@ -54,20 +58,73 @@ def send_confirmation_code(recipient: str, body: str):
             f"{e}"
         )
 
+@appointments_router.post("/appointments/preview")
+def booking_preview(
+    serivice_id: Annotated[str, Form()],
+    addons: list[str], 
+    available_date: Annotated[str, Form()],
+    available_time: Annotated[str, Form()],
+):
+    valid_id(serivice_id)
+        
+    service = sub_services_collection.find_one({"_id": ObjectId(serivice_id)})
+    if not service:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Service not found"
+        )
+
+    parsed_date = datetime.strptime(available_date, "%d-%m-%Y").date()
+    if parsed_date < date.today():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot book appointments in the past"
+        )
+
+    
+    available_addons = service.get("addons", [])
+    selected_addons = [a for a in available_addons if a["name"] in addons]
+
+    if not selected_addons:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="None of the selected addons are valid for this service"
+        )
+
+    addons_total = sum(float(a.get("price", 0)) for a in selected_addons)
+    base_price = float(service.get("price", 0))
+    total = base_price + addons_total
+
+    return {
+        "service": service.get("title"),
+        "description": service.get("description"),
+        "braiding_hours": service.get("braiding_hours"),
+        "available_date": available_date,
+        "available_time": available_time,
+        "addons": selected_addons,
+        "base_price": base_price,
+        "addons_total": addons_total,
+        "total": total,
+    }
+    
 
 @appointments_router.post("/appointments")
 async def book_appointment(request: Request,
     service: ServiceType,
+    service_id: Annotated[str, Form()],
     sub_category: Annotated[str, Form()],
     name: Annotated[str, Form()],
     phone_number: Annotated[str, Form()],
     email: Annotated[EmailStr, Form()],
     time: Annotated[str, Form()],
     date: Annotated[str, Form()],
+    addons: list[str] | None = None,
+    price: Annotated[float | None, Form()] = None,
     notes: Annotated[str | None, Form()] = None,
     image: UploadFile = File(None),
     video: UploadFile = File(None),
 ):
+    valid_id(service_id)
     available_services = getattr(request.app.state, "services", None)
     if not available_services:
         raise HTTPException(
@@ -119,6 +176,23 @@ async def book_appointment(request: Request,
     Use this code to confirm your appointment booking: {code}
     """
     send_confirmation_code(email, body)
+
+    service_doc = sub_services_collection.find_one({"_id": ObjectId(service_id)})
+    if not service_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Service ID {service_id} does not exist in our database."
+        )
+    available_addons = service_doc.get("addons", [])
+    selected_addons = [a for a in available_addons if a["name"] in addons]
+
+    if not selected_addons:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="None of the selected addons are valid for this service"
+        )
+
+    addons_total = sum(a["price"] for a in selected_addons)
     
     appointments_collection.insert_one({
         "service": service.value,
@@ -128,6 +202,8 @@ async def book_appointment(request: Request,
         "email": email,
         "time": time,
         "date": date,
+        "addons": selected_addons if addons else [],
+        "addons_total": addons_total if addons else 0,
        "notes": notes,
         "image_url": image_url if image_bytes is not None else "",
         "video_url": video_url if video_bytes is not None else "",
@@ -151,7 +227,6 @@ async def get_appointment(appointment_id: str):
 
 @appointments_router.get("/appointments")
 async def get_all_appointments(query="", name="", email="", limit=10, skip=0):
-    
     appointment = appointments_collection.find(
         filter={
             "$or": [

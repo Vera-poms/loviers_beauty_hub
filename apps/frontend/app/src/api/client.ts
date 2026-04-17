@@ -10,9 +10,14 @@ export const api = axios.create({
 })
 
 export interface Appointment {
+    service_id: string;
+    sub_category: string;
     service: string;
     name: string;
     email: string;
+    phone_number: string;
+    addons?: string[];
+    price?: number;
     time: string;
     date: string;
     notes?: string;
@@ -51,6 +56,10 @@ export async function fetchBookedAppointment(appointment_id: string){
 
 
 export async function bookAppointment(appointment: Appointment){
+    const {data} = await api.post("/appointments", appointment);
+    return data;
+}
+export async function bookReview(appointment: Appointment){
     const {data} = await api.post("/appointments", appointment);
     return data;
 }

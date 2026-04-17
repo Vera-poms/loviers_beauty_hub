@@ -1,16 +1,14 @@
-import { Box, Flex, Text, Image, VStack, Heading, Link } from '@chakra-ui/react';
+import { Box, Flex, Text, Image, Heading } from '@chakra-ui/react';
 import {
   fetchMainServices,
 } from '../../api/client'
-import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 // import { robotoSerif, montserrat } from '@/app/font'; 
 // import NextLink from 'next/link';
 
 
 export default function WghSlider() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const navigate = useNavigate()
+  const [activeSlide, setActiveSlide] = useState(1);
   const [services, setServices] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [statusMessage, setStatusMessage] = useState<{text: string, type: "error" | "success"} | null>(null)
