@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import ServiceDetails from "./components/Services/ServiceDetail"
 import BookingPage from "./components/Booking/BookingPage"
 import Signup from "./components/Admin/Signup";
+import Dashboard from "./components/Admin/Dashboard";
 
 const mockService = {
   id: 1,
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
   {
     path: "/admin/signup",
     element: <Signup />
+  },
+  {
+    path: "/admin/dashboard",
+    element: <Dashboard />
   },
 ])
 
