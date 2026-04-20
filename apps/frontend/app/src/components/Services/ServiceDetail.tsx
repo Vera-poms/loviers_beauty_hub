@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Flex, Text, Image, Heading, IconButton, Carousel, Button, Stack } from '@chakra-ui/react';
+import { Box, Flex, Text, Heading, IconButton, Carousel, Button, Stack } from '@chakra-ui/react';
 import { ServiceCard } from './ServiceCard';
 // import { robotoSerif, montserrat } from '@/app/font';
 import { LuChevronLeft, LuChevronRight, LuPause, LuPlay } from 'react-icons/lu';
@@ -40,6 +40,8 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
     setStatusMessage({text, type})
     setTimeout(() => setStatusMessage(null), 5000)
   }
+
+  
 
   useEffect(() => {
     const loadData = async () => {
@@ -182,6 +184,7 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
         <Stack px="4" py="4" gap={"4"}>
           {subServices.map((sub: any) => (
           <ServiceCard
+          id={sub.id}
             image={sub.image_url}
             title={sub.title}
             description={sub.description}

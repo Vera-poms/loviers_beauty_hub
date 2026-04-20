@@ -25,6 +25,13 @@ export interface Appointment {
     video_url?: string;
 }
 
+export interface AppointmentPreview {
+    service_id: string;
+    addons: string[];
+    available_date: string;
+    available_time: string
+}
+
 export async function fetchCategories(){
     const response = await api.get("/services/categories")
     return response.data
@@ -56,10 +63,18 @@ export async function fetchBookedAppointment(appointment_id: string){
 
 
 export async function bookAppointment(appointment: Appointment){
-    const {data} = await api.post("/appointments", appointment);
+    const {data} = await api.post("/appointments", appointment, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
     return data;
 }
-export async function bookReview(appointment: Appointment){
-    const {data} = await api.post("/appointments", appointment);
+export async function bookingPreview(appointment: AppointmentPreview){
+    const {data} = await api.post("/appointments/preview", appointment, {
+    headers: {
+    'Content-Type': 'multipart/form-data',
+    },
+    });
     return data;
 }

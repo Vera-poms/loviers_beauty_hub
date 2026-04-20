@@ -1,6 +1,7 @@
 import Homepage from "./components/Home/Hompage"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import ServiceDetails from "./components/Services/ServiceDetail"
+import BookingPage from "./components/Booking/BookingPage"
 
 const mockService = {
   id: 1,
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
   {
     path: "/services",
     element: <ServiceDetails service={mockService} subcategories={mockSubcategories} />
+  },
+  {
+    path: "/booking",
+    element: <BookingPage />
   }
 ])
 

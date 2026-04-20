@@ -96,6 +96,7 @@ def booking_preview(
     total = base_price + addons_total
 
     return {
+        "service_id": str(service.get("_id")),
         "service": service.get("title"),
         "description": service.get("description"),
         "braiding_hours": service.get("braiding_hours"),
@@ -203,6 +204,7 @@ async def book_appointment(request: Request,
         "time": time,
         "date": date,
         "addons": selected_addons if addons else [],
+        "price": price if price is not None else service_doc.get("price", 0),
         "addons_total": addons_total if addons else 0,
        "notes": notes,
         "image_url": image_url if image_bytes is not None else "",

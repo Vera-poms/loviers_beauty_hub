@@ -1,12 +1,14 @@
 import { Box, Card, Image, Heading, Text, Collapsible, Button, Flex, Stack } from '@chakra-ui/react';
 import {LuClock} from "react-icons/lu"
+import { useNavigate } from 'react-router-dom';
 
-interface Addon {
+export interface Addon {
   name: string;
   price: number;
 }
 
 interface ServiceCardProps {
+  id: string;
   image: string;
   title: string;
   description: string;
@@ -16,12 +18,20 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ 
+  id,
   image, 
   title, 
   description, 
   braidingHours, 
   addons = [],
  }: ServiceCardProps) {
+  const navigate = useNavigate();
+
+  const bookAppointmentNow = (addonName?: string) => {
+    const params = new URLSearchParams({ service_id: id });
+    if (addonName) params.set('addon', addonName);
+    navigate(`/booking?${params.toString()}`);
+  }
 
   return (
     <Card.Root maxW="sm" mb={4}>
@@ -52,9 +62,9 @@ export function ServiceCard({
                 <Flex key={index} align="center" justify="space-between" p={2} borderWidth={1} borderRadius="md">
                     <Box>
                     <Text fontWeight="medium">{addon.name}</Text>
-                    <Text fontSize="sm" color="gray.500">${addon.price.toFixed(2)}</Text>
+                    <Text fontSize="sm" color="gray.500">¢{addon.price.toFixed(2)}</Text>
                     </Box>
-                    <Button size="xs">Book</Button>
+                    <Button size="xs" onClick={() => bookAppointmentNow(addon.name)}>Book</Button>
                 </Flex>
                 ))}
             </Stack>
