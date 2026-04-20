@@ -2,6 +2,7 @@ import Homepage from "./components/Home/Hompage"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import ServiceDetails from "./components/Services/ServiceDetail"
 import BookingPage from "./components/Booking/BookingPage"
+import Signup from "./components/Admin/Signup";
 
 const mockService = {
   id: 1,
@@ -29,7 +30,11 @@ const router = createBrowserRouter([
   {
     path: "/booking",
     element: <BookingPage />
-  }
+  },
+  {
+    path: "/admin/signup",
+    element: <Signup />
+  },
 ])
 
 function App() {

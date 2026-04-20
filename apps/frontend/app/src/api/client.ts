@@ -78,3 +78,35 @@ export async function bookingPreview(appointment: AppointmentPreview){
     });
     return data;
 }
+export async function signup(
+    username: string,
+    email: string,
+    password: string,
+    role: "admin"
+){
+    const formData = new FormData()
+    formData.append("username", username)
+    formData.append("email", email)
+    formData.append("password", password)
+    formData.append("role", role)
+    const {data} = await api.post("/auth/signup", formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+}
+export async function login(
+    email: string,
+    password: string,
+){
+    const formData = new FormData()
+    formData.append("email", email)
+    formData.append("password", password)
+    const {data} = await api.post("/auth/login", formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+}

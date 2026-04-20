@@ -41,7 +41,7 @@ def register_user(
         "role": role
     }
 
-    registered_user = users_collection.insert_one(user_created)
+    users_collection.insert_one(user_created)
 
     return {
         "message": "Signup successful"
@@ -60,7 +60,7 @@ def login_user(
     if not correct_password:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong credentials!")
 
-    print(os.getenv("JWT_SECRET_KEY"))
+    
 
     encoded_jwt = jwt.encode({
             "id": str(user["_id"]),
