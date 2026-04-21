@@ -9,9 +9,13 @@ from routes.appointments import appointments_router
 from motor.motor_asyncio import AsyncIOMotorClient
 import pandas as pd
 from contextlib import asynccontextmanager
+from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 load_dotenv()
 
+from starlette.formparsers import MultiPartParser
+MultiPartParser.max_part_size = 10 * 1024 * 1024
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "loviers_services.csv")
 uri = os.getenv("MONGO_URI")

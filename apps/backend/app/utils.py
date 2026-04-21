@@ -8,6 +8,10 @@ import filetype
 from bson.objectid import ObjectId
 import secrets
 import string
+from starlette.datastructures import UploadFile as StarletteUploadFile
+from typing import Union
+
+
 
 load_dotenv()
 
@@ -48,7 +52,7 @@ def valid_id(id):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid ID")
 
 async def validate_file(
-    file: UploadFile,
+    file: Union[UploadFile, StarletteUploadFile],
     expected_types: str
 ):
     max_file_size_bytes = 10 * 1024 * 1024

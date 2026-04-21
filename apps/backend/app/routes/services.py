@@ -10,7 +10,7 @@ from fastapi import (
     Request,
     UploadFile
 )
-from typing import Annotated, Optional
+from typing import Annotated, Optional, cast
 from enum import Enum
 from dependencies.authn import is_authenticated
 from db import main_services_collection, sub_services_collection
@@ -20,6 +20,7 @@ import cloudinary.uploader
 from dependencies.authz import has_role
 from bson.objectid import ObjectId
 from pydantic import BaseModel, field_validator
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 services_router = APIRouter(tags=["Services"])
 
@@ -96,12 +97,20 @@ async def get_categories(request: Request):
 @services_router.post("/services/main", dependencies=[Depends(has_role("admin"))])
 async def upload_main_service(
     request: Request,
-    user_id: Annotated[str, Depends(is_authenticated)],
-    service: ServiceType,
-    braiding_hours: Annotated[str, Form()],
-    image: UploadFile = File(),
-    video: UploadFile = File(None),
+    user_id: Annotated[str, Depends(is_authenticated)]
 ):
+    form = await request.form(max_part_size=10 * 1024 * 1024) 
+    
+    service_raw = form.get("service")
+    braiding_hours = form.get("braiding_hours") or None
+    duration = form.get("duration") or None
+    image = form.get("image")
+    video = form.get("video") or None
+    try:
+        service = ServiceType(service_raw)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid service: {service_raw}")
+    
     service_count = main_services_collection.count_documents(filter={"$and": [
         {"service": service},
     ]})
@@ -123,6 +132,13 @@ async def upload_main_service(
             f"Invalid service: {service.value}"
         )
     
+    if not hasattr(image, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
+    if video is not None and not hasattr(video, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
+
+    image = cast(StarletteUploadFile, image)
+    video = cast(StarletteUploadFile, video) if video else None
     await validate_file(image, "image")
     if video:
         await validate_file(video, "video")
@@ -148,7 +164,7 @@ async def upload_main_service(
         "image_url": image_url,
         "video_url": video_url,
         "braiding_hours": braiding_hours,
-
+        "duration": duration
     })
 
     return {
@@ -160,11 +176,20 @@ async def update_main_service(
     request: Request,
     service_id,
     user_id: Annotated[str, Depends(is_authenticated)],
-    braiding_hours: Annotated[str | None, Form()] = None,
-    service: ServiceType | None = None,
-    image: UploadFile = File(None),
-    video: UploadFile = File(None),
 ):
+    form = await request.form(max_part_size=10 * 1024 * 1024) 
+    
+    service_raw = form.get("service")
+    braiding_hours = form.get("braiding_hours") or None
+    duration = form.get("duration") or None
+    image = form.get("image")
+    video = form.get("video") or None
+
+    try:
+        service = ServiceType(service_raw)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid service: {service_raw}")
+    
     service_count = main_services_collection.find_one({
         "_id": ObjectId(service_id)
     })
@@ -185,6 +210,14 @@ async def update_main_service(
                 status.HTTP_400_BAD_REQUEST,
                 f"Invalid service: {service}"
             )
+        
+    if not hasattr(image, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
+    if video is not None and not hasattr(video, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
+
+    image = cast(StarletteUploadFile, image)
+    video = cast(StarletteUploadFile, video) if video else None
     if image:
         await validate_file(image, "image")
     if video:
@@ -213,6 +246,7 @@ async def update_main_service(
             "user_id": user_id,
             "service": service or service_count["service"],
             "braiding_hours": braiding_hours or service_count["braiding_hours"],
+            "duration": duration or service_count["duration"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }
@@ -262,18 +296,38 @@ def get_one_main_service(service_id, user_id: Annotated[str, Depends(is_authenti
 @services_router.post("/services/subcategory", dependencies=[Depends(has_role("admin"))])
 async def upload_sub_service(
     request: Request,
-    title: Annotated[str, Form()],
+    # title: Annotated[str, Form()],
     user_id: Annotated[str, Depends(is_authenticated)],
-    service: ServiceType,
-    sub_category: Annotated[str, Form()],
-    braiding_hours: Annotated[str, Form()],
-    addons_required: Annotated[bool, Form()] = False,
-    price: Annotated[Optional[float], Form()] = None,
-    addons: Annotated[Optional[str], Form()] = None,
-    description: Annotated[str | None, Form()] = None,
-    image: UploadFile = File(),
-    video: UploadFile = File(None),
+    # service: ServiceType,
+    # sub_category: Annotated[str, Form()],
+    # braiding_hours: Annotated[str, Form()],
+    # addons_required: Annotated[bool, Form()] = False,
+    # price: Annotated[Optional[float], Form()] = None,
+    # addons: Annotated[Optional[str], Form()] = None,
+    # description: Annotated[str | None, Form()] = None,
+    # image: UploadFile = File(),
+    # video: UploadFile = File(None),
 ):
+    form = await request.form(max_part_size=10 * 1024 * 1024) 
+    
+    service_raw = form.get("service")
+    braiding_hours = form.get("braiding_hours") or None
+    title = form.get("title") or None
+    sub_category = form.get("sub_category") or None
+    description = form.get("description") or None
+    price = form.get("price") or None
+    addons = cast(str, form.get("addons")) or None
+    addons_required_raw = form.get("addons_required") or "false"
+    addons_required = addons_required_raw == "true"
+    duration = form.get("duration") or None
+    image = form.get("image")
+    video = form.get("video") or None
+
+    try:
+        service = ServiceType(service_raw)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid service: {service_raw}")
+    
     parsed_addons = parse_addons(addons)
  
     if addons_required:
@@ -319,6 +373,14 @@ async def upload_sub_service(
             f"Invalid service: {service.value}"
         )
     
+    if not hasattr(image, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
+    if video is not None and not hasattr(video, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
+
+    image = cast(StarletteUploadFile, image)
+    video = cast(StarletteUploadFile, video) if video else None
+    
     await validate_file(image, "image")
     if video:
         await validate_file(video, "video")
@@ -345,6 +407,7 @@ async def upload_sub_service(
         "service": service.value,
         "addons_required": addons_required,
         "addons": [a.model_dump() for a in parsed_addons],
+        "duration": duration,
         "sub_category": sub_category,
         "description": description,
         "braiding_hours": braiding_hours,
@@ -361,17 +424,37 @@ async def update_sub_service(
     request: Request,
     service_id,
     user_id: Annotated[str, Depends(is_authenticated)],
-    braiding_hours: Annotated[str | None, Form()] = None,
-    title: Annotated[str | None, Form()] = None,
-    price: Annotated[Optional[float], Form()] = None,
-    addons: Annotated[Optional[str], Form()] = None,
-    addons_required: Annotated[bool, Form()] = False,
-    service: ServiceType | None = None,
-    sub_category: Annotated[str | None, Form()] = None,
-    description: Annotated[str | None, Form()] = None,
-    image: UploadFile = File(None),
-    video: UploadFile = File(None),
+    # braiding_hours: Annotated[str | None, Form()] = None,
+    # title: Annotated[str | None, Form()] = None,
+    # price: Annotated[Optional[float], Form()] = None,
+    # addons: Annotated[Optional[str], Form()] = None,
+    # addons_required: Annotated[bool, Form()] = False,
+    # service: ServiceType | None = None,
+    # sub_category: Annotated[str | None, Form()] = None,
+    # description: Annotated[str | None, Form()] = None,
+    # image: UploadFile = File(None),
+    # video: UploadFile = File(None),
 ):
+    form = await request.form(max_part_size=10 * 1024 * 1024) 
+    
+    service_raw = form.get("service")
+    braiding_hours = form.get("braiding_hours") or None
+    title = form.get("title") or None
+    sub_category = form.get("sub_category") or None
+    description = form.get("description") or None
+    price = form.get("price") or None
+    addons = cast(str, form.get("addons")) or None
+    addons_required_raw = form.get("addons_required") or "false"
+    addons_required = addons_required_raw == "true"
+    duration = form.get("duration") or None
+    image = form.get("image")
+    video = form.get("video") or None
+
+    try:
+        service = ServiceType(service_raw)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Invalid service: {service_raw}")
+    
     parsed_addons = parse_addons(addons)
  
     if addons_required:
@@ -416,6 +499,15 @@ async def update_sub_service(
                 status.HTTP_400_BAD_REQUEST,
                 f"Invalid service: {service}"
             )
+
+    if not hasattr(image, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
+    if video is not None and not hasattr(video, "read"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
+
+    image = cast(StarletteUploadFile, image)
+    video = cast(StarletteUploadFile, video) if video else None
+
     if image:
         await validate_file(image, "image")
     if video:
@@ -450,6 +542,7 @@ async def update_sub_service(
             "sub_category": sub_category or service_count["sub_category"],
             "description": description or service_count["description"],
             "braiding_hours": braiding_hours or service_count["braiding_hours"],
+            "duration": duration or service_count["duration"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }

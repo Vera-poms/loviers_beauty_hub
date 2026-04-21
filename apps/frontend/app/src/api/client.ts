@@ -9,6 +9,30 @@ export const api = axios.create({
     }
 })
 
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
+        return config;
+    }
+)
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const currentPath = window.location.pathname;
+        const isOnAdminPage = currentPath.includes("/admin");
+        if (error.response?.status === 401 && isOnAdminPage) {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("role");
+            window.location.href = "/admin/signup";
+        }
+        return Promise.reject(error);
+    }
+)
+
 export interface Appointment {
     service_id: string;
     sub_category: string;
@@ -34,7 +58,8 @@ export interface AppointmentPreview {
 
 export interface UploadMainServicePayload{
     service: string;
-    braiding_hours: string;
+    braiding_hours?: string;
+    // duration?: string;
     image?: File | "";
     video?: File | "";
 }
@@ -42,13 +67,14 @@ export interface UploadSubServicePayload{
     service: string;
     title: string;
     description: string;
+    // duration?: string;
     addons_required: boolean;
     price?: number;
     addons?: string[];
     braiding_hours: string;
     sub_category: string;
     image?: File | "";
-    video?: File | "";
+    video?: File | ""   ;
 }
 
 export async function fetchCategories(){
@@ -78,6 +104,10 @@ export async function fetchSubServices(query="", limit = 10, skip = 0){
 export async function fetchBookedAppointment(appointment_id: string){
     const {data} = await api.get(`/appointments/${appointment_id}`);
     return data.data;
+}
+export async function fetchServices(){
+    const response = await api.get("/services/categories")
+    return response.data
 }
 
 
@@ -132,21 +162,19 @@ export async function login(
 export async function uploadMainService(payload: UploadMainServicePayload){
     const formData = new FormData()
     formData.append("service", payload.service)
-    formData.append("braiding_hours", payload.braiding_hours)
+    formData.append("braiding_hours", payload.braiding_hours ?? "")
+    // formData.append("duration", payload.duration ?? "")
+
     if (payload.image) formData.append("image", payload.image)
     if (payload.video) formData.append("video", payload.video)
-
-    const {data} = await api.post("/services/main", formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const {data} = await api.post("/services/main", formData)
     return data;
 }
 export async function uploadSubService(payload: UploadSubServicePayload){
     const formData = new FormData()
     formData.append("service", payload.service)
     formData.append("braiding_hours", payload.braiding_hours)
+    // formData.append("duration", payload.duration ?? "")
     formData.append("title", payload.title)
     formData.append("description", payload.description)
     formData.append("addons_required", payload.addons_required.toString())
@@ -156,11 +184,7 @@ export async function uploadSubService(payload: UploadSubServicePayload){
     if (payload.image) formData.append("image", payload.image)
     if (payload.video) formData.append("video", payload.video)
 
-    const {data} = await api.post("/services/subcategory", formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const {data} = await api.post("/services/subcategory", formData);
     return data;
 }
 
@@ -168,6 +192,7 @@ export async function uploadSubService(payload: UploadSubServicePayload){
 export async function updateMainService(service_id: string, payload: UploadMainServicePayload){
     const formData = new FormData()
     if (payload.braiding_hours !== undefined) formData.append("braiding_hours", payload.braiding_hours)
+    // if (payload.duration !== undefined) formData.append("duration", payload.duration)
     if (payload.service !== undefined) formData.append("service", payload.service)
     if (payload.image) formData.append("image", payload.image)
     if (payload.video) formData.append("video", payload.video)
@@ -182,6 +207,7 @@ export async function updateMainService(service_id: string, payload: UploadMainS
 export async function updateSubService(service_id: string, payload: UploadSubServicePayload){
     const formData = new FormData()
     if (payload.braiding_hours !== undefined) formData.append("braiding_hours", payload.braiding_hours)
+    // if (payload.duration !== undefined) formData.append("duration", payload.duration)
     if (payload.service !== undefined) formData.append("service", payload.service)
     if (payload.title !== undefined) formData.append("title", payload.title)
     if (payload.description !== undefined) formData.append("description", payload.description)
@@ -192,11 +218,7 @@ export async function updateSubService(service_id: string, payload: UploadSubSer
     if (payload.image) formData.append("image", payload.image)
     if (payload.video) formData.append("video", payload.video)
 
-    const {data} = await api.patch(`/services/subcategory/${service_id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const {data} = await api.patch(`/services/subcategory/${service_id}`, formData);
     return data;
 }
 
