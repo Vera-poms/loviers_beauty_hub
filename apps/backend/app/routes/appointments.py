@@ -185,14 +185,7 @@ async def book_appointment(request: Request,
         detail=f"Service ID {service_id} does not exist in our database."
         )
     available_addons = service_doc.get("addons", [])
-    selected_addons = [a for a in available_addons if a["name"] in addons]
-
-    if not selected_addons:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="None of the selected addons are valid for this service"
-        )
-
+    selected_addons = [a for a in available_addons if a["name"] in addons] if addons else []
     addons_total = sum(a["price"] for a in selected_addons)
     
     appointments_collection.insert_one({

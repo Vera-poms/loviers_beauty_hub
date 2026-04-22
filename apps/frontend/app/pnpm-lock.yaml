@@ -41,6 +41,9 @@ importers:
       react-router-dom:
         specifier: ^7.14.1
         version: 7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      use-mask-input:
+        specifier: ^3.9.0
+        version: 3.9.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
       '@chakra-ui/cli':
         specifier: ^3.34.0
@@ -1920,6 +1923,13 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  use-mask-input@3.9.0:
+    resolution: {integrity: sha512-jZM/9bscwqTD6yc1NjSq9/iUMX74gA+NnCh8++YW+UYW84U10anetnSUSxNaMgQEK71MQcx04CzOZJm6Tis0dw==}
+    engines: {node: '>=16', npm: '>=7'}
+    peerDependencies:
+      react: '>=17'
+      react-dom: '>=17'
 
   vite@8.0.8:
     resolution: {integrity: sha512-dbU7/iLVa8KZALJyLOBOQ88nOXtNG8vxKuOT4I2mD+Ya70KPceF4IAmDsmU0h1Qsn5bPrvsY9HJstCRh3hG6Uw==}
@@ -4184,6 +4194,11 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-mask-input@3.9.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+    dependencies:
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
 
   vite@8.0.8(@types/node@24.12.2)(esbuild@0.27.7):
     dependencies:

@@ -101,6 +101,18 @@ export async function fetchSubServices(query="", limit = 10, skip = 0){
     });
     return data.data;
 }
+export async function fetchAllAppointments(query="", name="", email="", limit = 10, skip = 0){
+    const {data} = await api.get("/appointments", {
+        params: {
+            query,
+            limit,
+            skip,
+            name,
+            email
+        }
+    });
+    return data.data;
+}
 export async function fetchBookedAppointment(appointment_id: string){
     const {data} = await api.get(`/appointments/${appointment_id}`);
     return data.data;
@@ -112,7 +124,7 @@ export async function fetchServices(){
 
 
 export async function bookAppointment(appointment: Appointment){
-    const {data} = await api.post("/appointments", appointment, {
+    const {data} = await api.post(`/appointments?service=${encodeURIComponent(appointment.service)}`, appointment, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

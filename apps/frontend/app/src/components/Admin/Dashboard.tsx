@@ -9,12 +9,22 @@ import {
   updateSubService,
   deleteMainService,
   deleteSubService,
+  fetchAllAppointments,
   type UploadMainServicePayload,
   type UploadSubServicePayload
 } from '../../api/client'
 import {
-  Box, Button, Field, Input, Heading, Stack,
-  Text, Flex, Textarea, SimpleGrid, Collapsible
+  Box, 
+  Button, 
+  Field, 
+  Input, 
+  Heading, 
+  Stack,
+  Text, 
+  Flex, 
+  Textarea, 
+  SimpleGrid, 
+  Collapsible
 } from '@chakra-ui/react'
 import { MdSearch, MdClose, MdEdit, MdDelete } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
@@ -24,6 +34,7 @@ const Dashboard = () => {
   const navigate = useNavigate()
   const [mainServices, setMainServices] = useState<any[]>([])
   const [subServices, setSubServices] = useState<any[]>([])
+  const [appointments, setAppointments] = useState<any[]>([])
   const [services, setServices] = useState<Record<string, string[]>>({})
   const [activeTab, setActiveTab] = useState<'main' | 'sub'>('main')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -78,10 +89,11 @@ const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [main, sub, services] = await Promise.all([fetchMainServices(), fetchSubServices(), fetchServices()])
+        const [main, sub, services, appointments] = await Promise.all([fetchMainServices(), fetchSubServices(), fetchServices(), fetchAllAppointments()])
         setServices(services)
         setMainServices(main)
         setSubServices(sub)
+        setAppointments(appointments)
       } catch {
         showMessage('Failed to fetch services', 'error')
       }
@@ -107,6 +119,8 @@ const Dashboard = () => {
         braiding_hours: s.braidingHours ?? "",
         image:          s.image      ?? null, 
         video:          s.video      ?? null,
+        price:          s.price ?? 0,
+        addons: Array.isArray(s.addons) ? s.addons : [],
       })
     } else if (activeTab === "main") {
       setEditForm({
@@ -139,7 +153,6 @@ const Dashboard = () => {
   }
 
   
-
   const handleUploadMain = async () => {
     if (!createMainForm.service) return showMessage('Service name is required', 'error')
     if (!createMainForm.image) return showMessage('Image is required', 'error')
@@ -254,6 +267,7 @@ const Dashboard = () => {
         </Box>
       )}
 
+      
     
       <Flex gap={2} borderBottomWidth="1px" pb={2} flexWrap="wrap">
         <Button
@@ -316,10 +330,6 @@ const Dashboard = () => {
               <Field.Label>Hours/Duration</Field.Label>
               <Input bg="white" value={createMainForm.braiding_hours || ''} onChange={e => setCreateMainForm(p => ({ ...p, braiding_hours: e.target.value }))} />
             </Field.Root>
-            {/* <Field.Root>
-              <Field.Label>Duration</Field.Label>
-              <Input bg="white" value={createMainForm.duration || ''} onChange={e => setCreateMainForm(p => ({ ...p, duration: e.target.value }))} />
-            </Field.Root> */}
             <Field.Root>
               <Field.Label>Image</Field.Label>
               <input type="file" accept="image/*" ref={mainImageRef} onChange={e => handleFileChange(e, 'image', setCreateMainForm)} />
@@ -397,6 +407,7 @@ const Dashboard = () => {
               {activeTab === 'sub' && <th style={thStyle}>Sub Category</th>}
               {activeTab === 'sub' && <th style={thStyle}>Title</th>}
               {activeTab === 'sub' && <th style={thStyle}>Description</th>}
+              {activeTab === 'sub' && <th style={thStyle}>Addons / Price </th>}
               <th style={thStyle}>Hours/Duration</th>
               <th style={{ ...thStyle, borderRight: 'none' }}>Actions</th>
             </tr>
@@ -424,6 +435,13 @@ const Dashboard = () => {
                 {activeTab === 'sub' && <td style={tdStyle}>{s.sub_category}</td>}
                 {activeTab === 'sub' && <td style={tdStyle}>{s.title}</td>}
                 {activeTab === 'sub' && <td style={tdStyle}>{s.description}</td>}
+                {activeTab === 'sub' && (
+                  <td style={tdStyle}>
+                    {Array.isArray(s.addons) && s.addons.length > 0
+                      ? s.addons.map((a: any) => `${a.name} ($${a.price})`).join(', ')
+                      : s.price ?? '—'}
+                  </td>
+                )}
                 <td style={tdStyle}>{s.braiding_hours}</td>
                 <td style={{ ...tdStyle, borderRight: 'none' }}>
                   <Flex gap={1} justify="center">
@@ -505,6 +523,94 @@ const Dashboard = () => {
                       onChange={e => setEditForm((p: any) => ({ ...p, description: e.target.value }))}
                     />
                   </Field.Root>
+                  <Field.Root>
+                    <Field.Label>Addons Required?</Field.Label>
+                    <Flex gap={2}>
+                      <Button
+                        size="sm"
+                        variant={editForm.addons_required ? 'solid' : 'outline'}
+                        colorPalette="green"
+                        onClick={() => setEditForm((p: any) => ({ ...p, addons_required: true }))}
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={!editForm.addons_required ? 'solid' : 'outline'}
+                        colorPalette="gray"
+                        onClick={() => setEditForm((p: any) => ({ ...p, addons_required: false }))}
+                      >
+                        No
+                      </Button>
+                    </Flex>
+                  </Field.Root>
+
+                 
+                  {!editForm.addons_required && (
+                    <Field.Root>
+                      <Field.Label>Price</Field.Label>
+                      <Input
+                        bg="white"
+                        type="number"
+                        value={editForm.price || ''}
+                        onChange={e => setEditForm((p: any) => ({ ...p, price: Number(e.target.value) }))}
+                      />
+                    </Field.Root>
+                  )}
+
+                  
+                  {editForm.addons_required && (
+                    <Field.Root>
+                      <Field.Label>Addons</Field.Label>
+                      <Stack gap={2} w="full">
+                        {(editForm.addons || []).map((addon: any, i: number) => (
+                          <Flex key={i} gap={2} align="center">
+                            <Input
+                              size="sm"
+                              bg="white"
+                              placeholder="Name"
+                              value={addon.name || ''}
+                              onChange={e => {
+                                const updated = [...editForm.addons]
+                                updated[i] = { ...updated[i], name: e.target.value }
+                                setEditForm((p: any) => ({ ...p, addons: updated }))
+                              }}
+                            />
+                            <Input
+                              size="sm"
+                              bg="white"
+                              placeholder="Price"
+                              type="number"
+                              value={addon.price || ''}
+                              onChange={e => {
+                                const updated = [...editForm.addons]
+                                updated[i] = { ...updated[i], price: Number(e.target.value) }
+                                setEditForm((p: any) => ({ ...p, addons: updated }))
+                              }}
+                            />
+                            <Button
+                              size="xs"
+                              colorPalette="red"
+                              variant="ghost"
+                              onClick={() => {
+                                const updated = editForm.addons.filter((_: any, idx: number) => idx !== i)
+                                setEditForm((p: any) => ({ ...p, addons: updated }))
+                              }}
+                            >
+                              <MdClose />
+                            </Button>
+                          </Flex>
+                        ))}
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => setEditForm((p: any) => ({ ...p, addons: [...(p.addons || []), { name: '', price: 0 }] }))}
+                        >
+                          + Add Addon
+                        </Button>
+                      </Stack>
+                    </Field.Root>
+                  )}
                 </>
               )}
 
@@ -518,17 +624,7 @@ const Dashboard = () => {
                 />
               </Field.Root>
 
-              {/* {activeTab === 'main' && (
-                <Field.Root>
-                  <Field.Label>Duration</Field.Label>
-                  <Input
-                    size="sm"
-                    bg="white"
-                    value={editForm.duration || ''}
-                    onChange={e => setEditForm((p: any) => ({ ...p, duration: e.target.value }))}
-                  />
-                </Field.Root>
-              )} */}
+              
 
               <Field.Root>
                 <Field.Label>Replace Image</Field.Label>

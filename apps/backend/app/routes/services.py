@@ -181,7 +181,6 @@ async def update_main_service(
     
     service_raw = form.get("service")
     braiding_hours = form.get("braiding_hours") or None
-    duration = form.get("duration") or None
     image = form.get("image")
     video = form.get("video") or None
 
@@ -210,17 +209,15 @@ async def update_main_service(
                 status.HTTP_400_BAD_REQUEST,
                 f"Invalid service: {service}"
             )
-        
-    if not hasattr(image, "read"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
-    if video is not None and not hasattr(video, "read"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
-
     image = cast(StarletteUploadFile, image)
     video = cast(StarletteUploadFile, video) if video else None
     if image:
+        if not hasattr(image, "read"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
         await validate_file(image, "image")
     if video:
+        if video is not None and not hasattr(video, "read"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
         await validate_file(video, "video")
 
     image_bytes = await image.read() if image else None
@@ -246,7 +243,6 @@ async def update_main_service(
             "user_id": user_id,
             "service": service or service_count["service"],
             "braiding_hours": braiding_hours or service_count["braiding_hours"],
-            "duration": duration or service_count["duration"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }
@@ -296,17 +292,7 @@ def get_one_main_service(service_id, user_id: Annotated[str, Depends(is_authenti
 @services_router.post("/services/subcategory", dependencies=[Depends(has_role("admin"))])
 async def upload_sub_service(
     request: Request,
-    # title: Annotated[str, Form()],
     user_id: Annotated[str, Depends(is_authenticated)],
-    # service: ServiceType,
-    # sub_category: Annotated[str, Form()],
-    # braiding_hours: Annotated[str, Form()],
-    # addons_required: Annotated[bool, Form()] = False,
-    # price: Annotated[Optional[float], Form()] = None,
-    # addons: Annotated[Optional[str], Form()] = None,
-    # description: Annotated[str | None, Form()] = None,
-    # image: UploadFile = File(),
-    # video: UploadFile = File(None),
 ):
     form = await request.form(max_part_size=10 * 1024 * 1024) 
     
@@ -319,7 +305,6 @@ async def upload_sub_service(
     addons = cast(str, form.get("addons")) or None
     addons_required_raw = form.get("addons_required") or "false"
     addons_required = addons_required_raw == "true"
-    duration = form.get("duration") or None
     image = form.get("image")
     video = form.get("video") or None
 
@@ -407,7 +392,7 @@ async def upload_sub_service(
         "service": service.value,
         "addons_required": addons_required,
         "addons": [a.model_dump() for a in parsed_addons],
-        "duration": duration,
+        # "duration": duration,
         "sub_category": sub_category,
         "description": description,
         "braiding_hours": braiding_hours,
@@ -424,16 +409,6 @@ async def update_sub_service(
     request: Request,
     service_id,
     user_id: Annotated[str, Depends(is_authenticated)],
-    # braiding_hours: Annotated[str | None, Form()] = None,
-    # title: Annotated[str | None, Form()] = None,
-    # price: Annotated[Optional[float], Form()] = None,
-    # addons: Annotated[Optional[str], Form()] = None,
-    # addons_required: Annotated[bool, Form()] = False,
-    # service: ServiceType | None = None,
-    # sub_category: Annotated[str | None, Form()] = None,
-    # description: Annotated[str | None, Form()] = None,
-    # image: UploadFile = File(None),
-    # video: UploadFile = File(None),
 ):
     form = await request.form(max_part_size=10 * 1024 * 1024) 
     
@@ -500,17 +475,19 @@ async def update_sub_service(
                 f"Invalid service: {service}"
             )
 
-    if not hasattr(image, "read"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
-    if video is not None and not hasattr(video, "read"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
+    
+    
 
     image = cast(StarletteUploadFile, image)
     video = cast(StarletteUploadFile, video) if video else None
 
     if image:
+        if not hasattr(image, "read"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Image file is required")
         await validate_file(image, "image")
     if video:
+        if video is not None and not hasattr(video, "read"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid video file")
         await validate_file(video, "video")
 
     image_bytes = await image.read() if image else None
@@ -542,7 +519,6 @@ async def update_sub_service(
             "sub_category": sub_category or service_count["sub_category"],
             "description": description or service_count["description"],
             "braiding_hours": braiding_hours or service_count["braiding_hours"],
-            "duration": duration or service_count["duration"],
             "image_url": image_url if image_bytes is not None else service_count["image_url"],
             "video_url": video_url if video_bytes is not None else service_count["video_url"],
         }
