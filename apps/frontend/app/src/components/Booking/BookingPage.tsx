@@ -15,11 +15,18 @@ import {
   Checkbox, 
   Field,
   Center,
-  Dialog
+  Dialog,
+  FileUpload,
+  Float
 } from '@chakra-ui/react';
 import { type Appointment, fetchSubServices, fetchServices, bookAppointment } from '../../api/client';
 import AppSelect from '../AppSelect/AppSelect';
 import { useForm, type SubmitHandler } from 'react-hook-form'; 
+import { CiCamera } from 'react-icons/ci';
+import { MdClose } from 'react-icons/md';
+import { IconButton } from '@chakra-ui/react';
+
+
 
 const BookingPage = () => {
   const [searchParams] = useSearchParams();
@@ -28,6 +35,8 @@ const BookingPage = () => {
   const serviceId = searchParams.get('service_id');
   const [serviceDetails, setServiceDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
       name: '',
       email: '',
@@ -104,7 +113,6 @@ const BookingPage = () => {
             ...prev,
             service: found.service,
             sub_category: found.sub_category,
-            image_url: found.image_url || '',
             addons: found.addons || ''
           }));
           setValue("service", found.service || '');
@@ -144,6 +152,8 @@ const BookingPage = () => {
       const status = err.response?.status
       if (status === 422){
         showMessage("Missing field(s)! Check and fill all fields.", "error")
+      }else{
+        showMessage(`Failed to book appointment ${err}`, "error")
       }
     }
   };
@@ -246,7 +256,6 @@ const BookingPage = () => {
           <Heading size="md">
             Select a service
           </Heading>
-          {/* <input type="hidden" {...register("addons")} /> */}
           {selectFields.map(({ name, placeholder, options, value, onValueChange }) => (
             <Field.Root key={name} invalid={!!errors[name]}>
               <AppSelect
@@ -255,11 +264,12 @@ const BookingPage = () => {
                 value={value}
                 onValueChange={onValueChange}
                 borderWidth="1px" 
-                borderColor="purple.400"
+                borderColor="purple.200"
                 rounded="2xl"
                 paddingY="2px"
                 label=""
                 focusRingColor='purple.600'
+                
               />
               <Field.ErrorText>{errors[name]?.message}</Field.ErrorText>
             </Field.Root>
@@ -270,7 +280,8 @@ const BookingPage = () => {
               <Field.Root key={name} invalid={!!errors[name]}>
                 <Input 
                 borderWidth={1} 
-                borderColor="purple.400"
+                borderColor="purple.200"
+                focusRingColor="purple.600"
                 borderRadius="md"
                 rounded="2xl"
                 type={type} {...register(name, rules)} />
@@ -287,8 +298,9 @@ const BookingPage = () => {
             invalid={!!errors[name]}>
               <Input
                 borderWidth={1} 
-                borderColor="purple.400"
+                borderColor="purple.200"
                 borderRadius="md"
+                focusRingColor="purple.600"
                 rounded="2xl"
                 type={type || "text"}
                 placeholder={placeholder}
@@ -298,6 +310,80 @@ const BookingPage = () => {
             </Field.Root>
           ))}
 
+          <FileUpload.Root accept={["image/*", "video/*"]} maxFiles={3}>
+            <FileUpload.HiddenInput />
+
+            <Flex w="100%" justifyContent="space-between" alignItems="center" pb="0">
+              <Box>
+                <Text>Notes</Text>
+                <Text fontSize="12px"
+                color="gray.500">
+                  Use the camera icon to upload inspo (images or videos).
+                </Text>
+              </Box>
+
+              <Box>
+                <FileUpload.Trigger asChild>
+                  <IconButton variant="outline"
+                  focusRingColor="purple.600"
+                  borderWidth="1px" 
+                borderColor="purple.200"
+                rounded="2xl">
+                    <CiCamera />
+                  </IconButton>
+                </FileUpload.Trigger>
+              </Box>
+            </Flex>
+            
+            <Field.Root>
+              <Textarea
+              focusRingColor="purple.600"
+              borderWidth="1px" 
+                borderColor="purple.200"
+                rounded="2xl"
+                placeholder="Any special requests?"
+                value={formData.notes}
+                onChange={(e) => {setFormData({ ...formData, notes: e.target.value })
+              setValue("notes", e.target.value);}}
+              />
+            </Field.Root>
+
+            <FileUpload.ItemGroup>
+              <FileUpload.Context>
+                {({ acceptedFiles }) => {
+                  useEffect(() => {
+                    for (const file of acceptedFiles) {
+                      if (file.type.startsWith("image/")) setImageFile(file);
+                      else if (file.type.startsWith("video/")) setVideoFile(file);
+                    }
+                  }, [acceptedFiles]);
+                  return (
+                    <Flex gap="2" flexWrap="wrap" mt="2">
+                    {acceptedFiles.map((file) => (
+                      <FileUpload.Item 
+                      w="auto"
+                      boxSize="20"
+                      p="2"
+                      key={file.name} 
+                      file={file}>
+                        <FileUpload.ItemPreviewImage />
+                        <Float placement="top-end">
+                          <FileUpload.ItemDeleteTrigger
+                        boxSize="4"
+                        layerStyle="fill.solid">
+                          
+                            <MdClose />
+                        </FileUpload.ItemDeleteTrigger>
+                        </Float>
+                      </FileUpload.Item>
+                    ))}
+                  </Flex>
+                  )
+                }}
+              </FileUpload.Context>
+            </FileUpload.ItemGroup>
+          </FileUpload.Root>
+          
           <Box p="4" 
           borderWidth={1} 
           borderColor="purple.400"

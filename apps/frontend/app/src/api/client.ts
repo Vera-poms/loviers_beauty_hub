@@ -139,7 +139,6 @@ export async function bookAppointment(appointment: Appointment){
     if (appointment.image_url) formData.append('image_url', appointment.image_url);
     if (appointment.video_url) formData.append('video_url', appointment.video_url);
 
-    // ✅ append each addon name as a separate field
     if (appointment.addons && appointment.addons.length > 0) {
     appointment.addons.forEach((addon: any) => {
         formData.append('addons', addon);
