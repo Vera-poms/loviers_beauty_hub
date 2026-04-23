@@ -124,13 +124,35 @@ export async function fetchServices(){
 
 
 export async function bookAppointment(appointment: Appointment){
-    const {data} = await api.post(`/appointments?service=${encodeURIComponent(appointment.service)}`, appointment, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+    const formData = new FormData();
+
+    // append all scalar fields
+    formData.append('service_id', appointment.service_id);
+    formData.append('sub_category', appointment.sub_category);
+    formData.append('name', appointment.name);
+    formData.append('phone_number', appointment.phone_number);
+    formData.append('email', appointment.email);
+    formData.append('time', appointment.time);
+    formData.append('date', appointment.date);
+    if (appointment.price) formData.append('price', String(appointment.price));
+    if (appointment.notes) formData.append('notes', appointment.notes);
+    if (appointment.image_url) formData.append('image_url', appointment.image_url);
+    if (appointment.video_url) formData.append('video_url', appointment.video_url);
+
+    // ✅ append each addon name as a separate field
+    if (appointment.addons && appointment.addons.length > 0) {
+    appointment.addons.forEach((addon: any) => {
+        formData.append('addons', addon);
+    });
+}
+
+    const { data } = await api.post(
+        `/appointments?service=${encodeURIComponent(appointment.service)}`,
+        formData
+    );
     return data;
 }
+
 export async function bookingPreview(appointment: AppointmentPreview){
     const {data} = await api.post("/appointments/preview", appointment, {
     headers: {

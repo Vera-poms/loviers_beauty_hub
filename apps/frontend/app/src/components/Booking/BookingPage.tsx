@@ -102,14 +102,18 @@ const BookingPage = () => {
           setServiceDetails(found);
           setFormData(prev => ({
             ...prev,
-            service: found.category || prev.service,
-            sub_category: found.title || prev.sub_category,
+            service: found.service,
+            sub_category: found.sub_category,
             image_url: found.image_url || '',
+            addons: found.addons || ''
           }));
-          setValue("service", found.category || '');
-          setValue("sub_category", found.title || '');
-          setValue("image_url", found.image_url || ''); 
+          setValue("service", found.service || '');
+          setValue("sub_category", found.sub_category || '');
           setValue("addons", found.addons || ''); 
+          if (addonName && found.addons?.some((a: any) => a.name === addonName)) {
+            setSelectedAddons([addonName]);
+            setValue("addons", [addonName]); 
+          }
         }
       } catch (err) {
         showMessage(`Failed to load services ${err}`, "error")
@@ -132,26 +136,15 @@ const BookingPage = () => {
         ...data,
         date: formatBackendDate(data.date),
       });
-      setShowSuccess(true);
-      reset();
-      setFormData({        
-      name: '', 
-      email: '', 
-      phone_number: '', 
-      date: '', 
-      time: '',
-      addons: [], 
-      service_id: searchParams.get('service_id') || '',
-      sub_category: '', 
-      service: '', 
-      price: 0, 
-      notes: '', 
-      image_url: '',
-       video_url: '',
-      }); 
       showMessage("Booking successful! Check your email.", "success")
-    } catch (err) {
-      showMessage(`Booking failed. ${err}`, "error")
+      setShowSuccess(true);
+      
+      
+    } catch (err: any) {
+      const status = err.response?.status
+      if (status === 422){
+        showMessage("Missing field(s)! Check and fill all fields.", "error")
+      }
     }
   };
 
@@ -235,7 +228,7 @@ const BookingPage = () => {
     <Box p={8} maxW="600px" mx="auto">
       <Heading pb="4">Book an appointment</Heading>
       
-      <Flex align="center" gap={4} mb={8} p={4} border="1px solid #eee" 
+      <Flex align="center" gap={4} mb={8} p={4} 
       borderWidth={1} 
       borderColor="purple.400"
       borderRadius="xl">
@@ -253,6 +246,7 @@ const BookingPage = () => {
           <Heading size="md">
             Select a service
           </Heading>
+          {/* <input type="hidden" {...register("addons")} /> */}
           {selectFields.map(({ name, placeholder, options, value, onValueChange }) => (
             <Field.Root key={name} invalid={!!errors[name]}>
               <AppSelect
@@ -262,7 +256,6 @@ const BookingPage = () => {
                 onValueChange={onValueChange}
                 borderWidth="1px" 
                 borderColor="purple.400"
-                borderRadius="md"
                 rounded="2xl"
                 paddingY="2px"
                 label=""
@@ -290,7 +283,8 @@ const BookingPage = () => {
             Tell us how to reach you
           </Heading>
           {contactFields.map(({ name, placeholder, type, rules }) => (
-            <Field.Root key={name} invalid={!!errors[name]}>
+            <Field.Root key={name} 
+            invalid={!!errors[name]}>
               <Input
                 borderWidth={1} 
                 borderColor="purple.400"
@@ -304,7 +298,11 @@ const BookingPage = () => {
             </Field.Root>
           ))}
 
-          <Box p="4" borderWidth={1} rounded="lg">
+          <Box p="4" 
+          borderWidth={1} 
+          borderColor="purple.400"
+          // borderRadius="md"
+          rounded="lg">
             <Heading fontSize={{base: "16px", sm: "18px"}}>Terms and conditions</Heading>
             <List.Root fontSize="xs"
             p="2"
@@ -344,7 +342,14 @@ const BookingPage = () => {
 
       {statusMessage && (
         <Box
+          mt="4"
           p="3"
+          position="fixed"
+          left="50%"
+          top="50%"
+          transform="translate(-50%, -50%)"
+          zIndex={2000}
+          animation={"scale-fade-in"}
           borderRadius="md"
           bg={statusMessage.type === 'error' ? 'red.50' : 'green.50'}
           borderWidth="1px"
@@ -383,7 +388,7 @@ const BookingPage = () => {
           </Dialog.Footer>
         </Dialog.Content>
         </Dialog.Positioner>
-        </Dialog.Root>
+      </Dialog.Root>
     </Box>
   );
 };

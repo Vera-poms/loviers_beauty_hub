@@ -12,7 +12,6 @@ interface AppSelectProps{
     placeholder?: string
     borderWidth?: string
     borderColor?: string
-    borderRadius?: string
     rounded?: string
     width?: string
     paddingY?: string
@@ -29,7 +28,6 @@ export const AppSelect = ({
     paddingY="4",
     onValueChange,
     borderColor,
-    borderRadius,
     rounded,
     borderWidth,
     focusRingColor,
@@ -47,17 +45,20 @@ export const AppSelect = ({
     paddingY={paddingY}
     value={Array.isArray(value) ? value : value ? [value] : []}
     >
-        {label && <Select.Label>{label}</Select.Label>}
+        {label && <Select.Label
+        >{label}</Select.Label>}
         <Select.Control
-        borderColor={borderColor}
-        borderRadius={borderRadius}
-        borderWidth={borderWidth}
-        rounded={rounded}
-        focusRingColor={focusRingColor}>
-            <Select.Trigger>
-                <Select.ValueText placeholder={placeholder}/>
+       >
+            <Select.Trigger
+            borderColor={borderColor}
+            borderWidth={borderWidth}
+            rounded={rounded}
+            >
+                <Select.ValueText 
+                placeholder={placeholder}/>
             </Select.Trigger>
-            <Select.IndicatorGroup>
+            <Select.IndicatorGroup
+            >
                 <Select.Indicator />
             </Select.IndicatorGroup>
         </Select.Control>
