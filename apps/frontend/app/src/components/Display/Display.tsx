@@ -92,7 +92,7 @@ const Display = () => {
               px="3"
               rounded="lg"
               w={{base:"80%"}}
-                bg="blackAlpha.400"
+              bg="blackAlpha.400"
               >
                 <Box
                 color="white">
@@ -109,7 +109,9 @@ const Display = () => {
                 </Box>
                 <Button
                 size="sm"
-                onClick={handleClick}>
+                fontWeight="bold"
+                onClick={handleClick}
+                bg="purple.600">
                   Book appointment
                 </Button>
               </Flex>

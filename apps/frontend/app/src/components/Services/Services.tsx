@@ -37,15 +37,22 @@ export default function WghSlider() {
   if (loading || !services?.length) return null
 
   return (
-    <Box className="container"  overflow="hidden">
-        <Heading pl="4">
+    <Box 
+    
+    overflow="hidden">
+        <Heading 
+        paddingTop={{base:"25px", md: "45px"}} 
+        fontWeight="bold"
+        fontSize="26px"
+        textAlign="center"
+        color="purple.500">
             Services
         </Heading>
       <Flex 
         justify="center" 
         align="center" 
         position="relative" 
-        h="400px" 
+        h={{base:"350px", md: "500px"}} 
         perspective="400px"
       >
         {services.map((image: any, index: number) => {
@@ -71,21 +78,25 @@ export default function WghSlider() {
                 <Box
                   bg="white"
                   borderRadius="lg"
-                  boxShadow={isActive ? '2xl' : 'md'}
+                  boxShadow="0 4px 6px 1px rgba(213, 137, 241, 0.8)"
                   overflow="hidden"
-                  w="180px"
+                  w={{base:"200px", md: "270px"}}
                 >
-                  <Image src={image.image_url} alt={image.service} h="180px" w="100%" objectFit="cover" objectPosition="top" />
-                  
+                  <Image 
+                  src={image.image_url} 
+                  alt={image.service} 
+                  h={{base:"200px", md: "270px"}} w="100%" 
+                  objectFit="cover" objectPosition="top" />
                   <Text 
                     fontWeight="bold"
                     p="3" 
-                  //   fontFamily={robotoSerif.style.fontFamily}
                     fontSize="lg"
+                    textAlign="center"
+                    pt="5px"
+                    color="purple.600"
                   >
                     {image.service}
                   </Text>
-                  
                 </Box>
             </Box>
           );

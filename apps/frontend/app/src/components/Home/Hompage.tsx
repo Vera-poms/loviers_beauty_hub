@@ -12,7 +12,7 @@ const Hompage = () => {
     
     justify="space-between"
     >
-      <Stack>
+      <Stack gap="0">
         <Navbar />
         <Display />
         <Services />

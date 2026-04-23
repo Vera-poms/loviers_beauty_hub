@@ -10,8 +10,13 @@ interface AppSelectProps{
     options: SelectOption[]
     label?: string
     placeholder?: string
+    borderWidth?: string
+    borderColor?: string
+    borderRadius?: string
+    rounded?: string
     width?: string
     paddingY?: string
+    focusRingColor?: string
     value?: string | string[]
     onValueChange: (details: any) => void
 }
@@ -23,6 +28,11 @@ export const AppSelect = ({
     width="100%",
     paddingY="4",
     onValueChange,
+    borderColor,
+    borderRadius,
+    rounded,
+    borderWidth,
+    focusRingColor,
     value
 }: AppSelectProps) => {
     const collection = useMemo(() =>
@@ -38,7 +48,12 @@ export const AppSelect = ({
     value={Array.isArray(value) ? value : value ? [value] : []}
     >
         {label && <Select.Label>{label}</Select.Label>}
-        <Select.Control>
+        <Select.Control
+        borderColor={borderColor}
+        borderRadius={borderRadius}
+        borderWidth={borderWidth}
+        rounded={rounded}
+        focusRingColor={focusRingColor}>
             <Select.Trigger>
                 <Select.ValueText placeholder={placeholder}/>
             </Select.Trigger>

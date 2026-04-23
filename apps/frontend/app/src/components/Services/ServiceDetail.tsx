@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Box, Flex, Text, Heading, IconButton, Carousel, Button, Stack } from '@chakra-ui/react';
+import { 
+  Box, 
+  Flex, 
+  Text, 
+  Heading, 
+  IconButton, 
+  Carousel, 
+  Button, 
+  Stack,
+  Center,
+  Spinner
+ } from '@chakra-ui/react';
 import { ServiceCard } from './ServiceCard';
 // import { robotoSerif, montserrat } from '@/app/font';
 import { LuChevronLeft, LuChevronRight, LuPause, LuPlay } from 'react-icons/lu';
@@ -41,7 +52,6 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
     setTimeout(() => setStatusMessage(null), 5000)
   }
 
-  
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,7 +59,6 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
         setLoading(true)
         const data = await fetchMainServices()
         const subData = await fetchSubServices()
-        console.log(subData)
         setServices(data)
         setSubServices(subData)
       } catch (error) {
@@ -61,11 +70,28 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
     loadData()
   }, [])
 
-  if (loading || !services?.length || !subServices?.length) return null
+  if (loading) return <Center pt="50%"><Spinner color="purple.600"/></Center>
 
   return (
     <Box>
       <Navbar />
+      {statusMessage && (
+        <Box
+          p="3"
+          borderRadius="md"
+          bg={statusMessage.type === 'error' ? 'red.50' : 'green.50'}
+          borderWidth="1px"
+          borderColor={statusMessage.type === 'error' ? 'red.200' : 'green.200'}
+        >
+          <Text
+            color={statusMessage.type === 'error' ? 'red.600' : 'green.600'}
+            textAlign="center"
+            fontSize="sm"
+          >
+            {statusMessage.text}
+          </Text>
+        </Box>
+      )}
         <Carousel.Root
           autoplay={{ delay: 7000 }}
           slideCount={services.length}
@@ -98,11 +124,11 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
                 <Flex
                   position="absolute"
                   bottom="10px"
-                 left="20px"
-                 h={{ sm: "80px"}}
+                  left="20px"
+                  h={{ sm: "80px"}}
                   p="4"
                   rounded="lg"
-              w={{base:"50%"}}
+                  w={{base:"50%"}}
                   bg="blackAlpha.600"
                   direction="column"
                   gap="1"
@@ -145,21 +171,15 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
           </Carousel.Control>
         </Carousel.Root>
 
-      {services.map((service: any) => (
-        <Box px="4"  key={service.id}>
-          <Text
-            fontSize="lg"
-            // fontFamily={montserrat.style.fontFamily}
-          >
-            {service.braiding_hours}
-          </Text>
-        </Box>
-        ))}
+      
+        
+        
         <Box px="4" py="4">
           <Flex gap="2" overflowX="auto" >
             <Button
               size="sm"
               variant={activeTab === 'all' ? 'solid' : 'outline'}
+              bg={activeTab === "all"? "purple.600" : ''}
               onClick={() => setActiveTab('all')}
             //   fontFamily={montserrat.style.fontFamily}
             >
@@ -173,6 +193,7 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
                 onClick={() => setActiveTab(sub.sub_category)}
                 // fontFamily={montserrat.style.fontFamily}
                 whiteSpace="nowrap"
+                bg={activeTab === sub.sub_category? "purple.600" : ''}
               >
                 {sub.sub_category}
               </Button>
@@ -183,15 +204,15 @@ const ServiceDetails = ({ service, subcategories }: ServiceDetailsProps) => {
         
         <Stack px="4" py="4" gap={"4"}>
           {subServices.map((sub: any) => (
-          <ServiceCard
-          id={sub.id}
-            image={sub.image_url}
-            title={sub.title}
-            description={sub.description}
-            braidingHours={sub.braiding_hours}
-            addons={sub.addons}
-          />
-      ))}
+            <ServiceCard
+            id={sub.id}
+              image={sub.image_url}
+              title={sub.title}
+              description={sub.description}
+              braidingHours={sub.braiding_hours}
+              addons={sub.addons}
+            />
+          ))}
         </Stack>
     </Box>
   )

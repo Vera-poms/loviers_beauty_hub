@@ -34,37 +34,55 @@ export function ServiceCard({
   }
 
   return (
-    <Card.Root maxW="sm" mb={4}>
+    <Card.Root 
+    maxW="sm"
+    boxShadow="2px 4px 6px -2px rgba(199, 73, 245, 0.98)" 
+    bg="purple.100"
+    mb={4}>
       <Card.Body>
         <Collapsible.Root>
         <Collapsible.Trigger>
             <Flex>
-                <Image src={image} alt={title} borderRadius="md" mb={2} width="100px" height="70px" />
-                <Box>
-                  <Heading size="md" mb={1}>
-                    {title}
-                  </Heading>
-                  <Text mb={2}>{description}</Text>
-                  {braidingHours && (
-                    <Flex align="center" gap={1}>
-                      <LuClock />
-                      <Text fontSize="sm" color="gray.500">
-                        {braidingHours}
-                      </Text>
-                    </Flex>
-                  )}
-                </Box>
+              <Image src={image} alt={title} borderRadius="md" mb={2} width="100px" height="120px" />
+              <Box
+              textAlign="left"
+              pl="10px">
+                <Heading size="lg" mb={1}>
+                  {title}
+                </Heading>
+                <Text mb={2}
+                fontSize="xs">{description}</Text>
+                {braidingHours && (
+                  <Flex align="center" gap={1}>
+                    <LuClock />
+                    <Text fontSize="xs" color="gray.500">
+                      {braidingHours}
+                    </Text>
+                  </Flex>
+                )}
+              </Box>
             </Flex>
         </Collapsible.Trigger>
         <Collapsible.Content>
-            <Stack gap={2} mt={2}>
+            <Stack gap={2} 
+            mt={2}
+            >
                 {addons?.map((addon, index:number) => (
-                <Flex key={index} align="center" justify="space-between" p={2} borderWidth={1} borderRadius="md">
+                <Flex key={index} 
+                align="center" 
+                justify="space-between" 
+                p={2} 
+                borderWidth={1} 
+                borderColor="purple.400"
+                borderRadius="md">
                     <Box>
                     <Text fontWeight="medium">{addon.name}</Text>
-                    <Text fontSize="sm" color="gray.500">¢{addon.price.toFixed(2)}</Text>
+                    <Text fontSize="sm" color="gray.500">GH¢{addon.price.toFixed(2)}</Text>
                     </Box>
-                    <Button size="xs" onClick={() => bookAppointmentNow(addon.name)}>Book</Button>
+                    <Button 
+                    size="xs" 
+                    bg="purple.600"
+                    onClick={() => bookAppointmentNow(addon.name)}>Book</Button>
                 </Flex>
                 ))}
             </Stack>

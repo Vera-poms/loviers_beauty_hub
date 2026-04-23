@@ -155,126 +155,154 @@ const BookingPage = () => {
     }
   };
 
-  if (loading) return <Center><Spinner /></Center>
-  if (!serviceDetails) return <Text>Service not found.</Text>;
+  const contactFields: {
+    name: keyof Appointment;
+    placeholder: string;
+    type?: string;
+    rules: object;
+  }[] = [
+    {
+      name: "name",
+      placeholder: "Name",
+      rules: { required: "Name is required" },
+    },
+    {
+      name: "email",
+      placeholder: "Email",
+      type: "email",
+      rules: {
+        required: "Email is required",
+        pattern: {
+          value: /^[A-Za-z\._\-0-9]*[@][A-Za-z]*[\.][a-z]{2,4}$/,
+          message: "Invalid email address",
+        },
+      },
+    },
+    {
+      name: "phone_number",
+      placeholder: "Phone number",
+      rules: { required: "Phone number is required" },
+    },
+  ];
 
-  
+  const dateFields: { name: keyof Appointment; type: string; rules: object }[] = [
+    { name: "date", type: "date", rules: { required: "Date is required" } },
+    { name: "time", type: "time", rules: { required: "Time is required" } },
+  ];
+
+  const selectFields = [
+    {
+      name: "service" as keyof Appointment,
+      placeholder: "Main Services",
+      options: Object.keys(services).map(s => ({ label: s, value: s })),
+      value: formData.service ? [formData.service] : [],
+      onValueChange: (details: any) => {
+        setFormData(prev => ({ ...prev, service: details.value[0] }));
+        setValue("service", details.value[0]);
+      },
+    },
+    {
+      name: "sub_category" as keyof Appointment,
+      placeholder: "Sub categories",
+      options: createSubCategories.map(s => ({ label: s, value: s })),
+      value: formData.sub_category ? [formData.sub_category] : [],
+      onValueChange: (details: any) => {
+        setFormData(prev => ({ ...prev, sub_category: details.value[0] }));
+        setValue("sub_category", details.value[0]);
+      },
+    },
+    ...(serviceDetails?.addons?.length > 0
+      ? [{
+          name: "addons" as keyof Appointment,
+          placeholder: "Select addons",
+          options: serviceDetails.addons.map((a: any) => ({
+            label: `${a.name} — GH¢${a.price}`,
+            value: a.name,
+          })),
+          value: selectedAddons,
+          onValueChange: (details: any) => {
+            setSelectedAddons(details.value);
+            setValue("addons", details.value);
+          },
+        }]
+      : []),
+  ];
+
+  if (loading) return <Center pt="50%"><Spinner color="purple.600"/></Center>
+  if (!serviceDetails) return <Text>Service not found.</Text>;
 
   return (
     <Box p={8} maxW="600px" mx="auto">
       <Heading pb="4">Book an appointment</Heading>
       
-      <Flex align="center" gap={4} mb={8} p={4} border="1px solid #eee" rounded="md">
+      <Flex align="center" gap={4} mb={8} p={4} border="1px solid #eee" 
+      borderWidth={1} 
+      borderColor="purple.400"
+      borderRadius="xl">
         <Image src={serviceDetails.image_url} boxSize="80px" objectFit="cover" rounded="md" />
         <Box>
           <Heading size="md">{serviceDetails.title}</Heading>
           <Text fontSize="sm">
-            ¢{serviceDetails.price} • {serviceDetails.braiding_hours}
+            GH¢{serviceDetails.price} • {serviceDetails.braiding_hours}
           </Text>
         </Box>
       </Flex>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={4}>
-          <Heading size="xs">Tell us how to reach you</Heading>
-          
-          <Field.Root invalid={!!errors.name}>
-            <Input 
-            placeholder="Name" 
-            {...register("name", 
-            { required: "Name is required" })} />
-            <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.email}>
-            <Input 
-            type="email" 
-            placeholder="Email" 
-            {...register("email", {
-              required: "Email is required",
-              pattern: {
-                value: /^[A-Za-z\._\-0-9]*[@][A-Za-z]*[\.][a-z]{2,4}$/,
-                message: "Invalid email address"
-            }})} />
-            <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.phone_number}>
-            <Input placeholder="Phone number"
-            {...register("phone_number", 
-            { required: "Phone number is required" })}  />
-            <Field.ErrorText>
-              {errors.phone_number?.message}
-            </Field.ErrorText>
-          </Field.Root>
+          <Heading size="md">
+            Select a service
+          </Heading>
+          {selectFields.map(({ name, placeholder, options, value, onValueChange }) => (
+            <Field.Root key={name} invalid={!!errors[name]}>
+              <AppSelect
+                options={options}
+                placeholder={placeholder}
+                value={value}
+                onValueChange={onValueChange}
+                borderWidth="1px" 
+                borderColor="purple.400"
+                borderRadius="md"
+                rounded="2xl"
+                paddingY="2px"
+                label=""
+                focusRingColor='purple.600'
+              />
+              <Field.ErrorText>{errors[name]?.message}</Field.ErrorText>
+            </Field.Root>
+          ))}
 
           <Flex gap={4}>
-            <Field.Root invalid={!!errors.date}>
-              <Input type="date" 
-              {...register("date", 
-              { required: "Date is required" })} />
-              <Field.ErrorText>{errors.date?.message}</Field.ErrorText>
-            </Field.Root>
-
-            <Field.Root invalid={!!errors.time}>
-              <Input type="time" 
-              {...register("time", { required: "Time is required" })} />
-              <Field.ErrorText>{errors.time?.message}</Field.ErrorText>
-            </Field.Root>
+            {dateFields.map(({ name, type, rules }) => (
+              <Field.Root key={name} invalid={!!errors[name]}>
+                <Input 
+                borderWidth={1} 
+                borderColor="purple.400"
+                borderRadius="md"
+                rounded="2xl"
+                type={type} {...register(name, rules)} />
+                <Field.ErrorText>{errors[name]?.message}</Field.ErrorText>
+              </Field.Root>
+            ))}
           </Flex>
-          <Field.Root invalid={!!errors.service}>
-            <AppSelect 
-              options={Object.keys(services).map(s => ({label: s, value: s}))}
-              placeholder='Main Services'
-              value={formData.service ? [formData.service] : []}
-              onValueChange={(details) => {setFormData(prev => ({ 
-                ...prev, service: details.value[0] 
-              }))
-            setValue("service", details.value[0]);}}
-            />
-            <Field.ErrorText>{errors.service?.message}</Field.ErrorText>
-          </Field.Root>
 
-          <Field.Root invalid={!!errors.sub_category}>
-            <AppSelect 
-              options={createSubCategories.map(s => ({label: s, value: s}))}
-              placeholder='Sub categories'
-              value={formData.sub_category ? [formData.sub_category] : []}
-              onValueChange={(details) => {setFormData(prev => ({ ...prev, sub_category: details.value[0] }))
-            setValue("sub_category", details.value[0]);}}
-            />
-            <Field.ErrorText>
-              {errors.sub_category?.message}
-            </Field.ErrorText>
-          </Field.Root>
-
-          {serviceDetails.addons && serviceDetails.addons.length > 0 && (
-            <Field.Root invalid={!!errors.addons}>
-              <AppSelect
-                options={serviceDetails.addons.map((a: any) => ({
-                  label: `${a.name} — GH¢${a.price}`,
-                  value: a.name,
-                }))}
-                placeholder="Select addons"
-                value={selectedAddons}
-                onValueChange={(details) => {
-                  setSelectedAddons(details.value);
-                  setValue("addons", details.value);
-                }}
+          <Heading size="md">
+            Tell us how to reach you
+          </Heading>
+          {contactFields.map(({ name, placeholder, type, rules }) => (
+            <Field.Root key={name} invalid={!!errors[name]}>
+              <Input
+                borderWidth={1} 
+                borderColor="purple.400"
+                borderRadius="md"
+                rounded="2xl"
+                type={type || "text"}
+                placeholder={placeholder}
+                {...register(name, rules)}
               />
-            <Field.ErrorText>
-            {errors.addons?.message}
-            </Field.ErrorText>
+              <Field.ErrorText>{errors[name]?.message}</Field.ErrorText>
             </Field.Root>
-            )}
-          <Field.Root>
-            <Field.Label>Notes</Field.Label>
-            <Textarea 
-              placeholder="Any special requests?" 
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})} 
-            />
-          </Field.Root>
+          ))}
 
           <Box p="4" borderWidth={1} rounded="lg">
             <Heading fontSize={{base: "16px", sm: "18px"}}>Terms and conditions</Heading>
@@ -292,7 +320,7 @@ const BookingPage = () => {
               </List.Item>
             </List.Root>
 
-           <Checkbox.Root
+            <Checkbox.Root
             colorPalette="purple"
             required>
               <Checkbox.HiddenInput />
@@ -304,7 +332,7 @@ const BookingPage = () => {
               </Checkbox.Label>
             </Checkbox.Root>
           </Box>
-           
+            
           <Button type="submit" 
           bg={isValid ? "purple.600" : "purple.300"}
           color="white"

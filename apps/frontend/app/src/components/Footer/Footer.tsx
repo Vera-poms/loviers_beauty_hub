@@ -13,12 +13,14 @@ const Footer = () => {
     <Stack
     h="150px"
     roundedTop="xl"
-    bg="blackAlpha.900"
-    color="white"
+    bg="purple.200"
+    color="black"
     display="flex"
     direction="column"
     align="center"
     pt="20px"
+    fontWeight="bold"
+    boxShadow="0 4px 6px 5px rgba(199, 73, 245, 0.98)"
     // className={`
     //     ${montserrat.variable}  ${montserrat.className}`}
     >
@@ -38,14 +40,14 @@ const Footer = () => {
 
         <Text
         fontSize="11px">
-            Shop is located at Tabora no. 2.
+            Shop is located at 70 Race Course St, Ghana.
         </Text>
 
         <Flex
         fontSize="9px"
         align="center"
         gap="1">
-            Copyright <PiCopyrightLight /> 2026
+            Copyright <PiCopyrightLight size="12px"/> 2026
  
         </Flex>
     </Stack>
