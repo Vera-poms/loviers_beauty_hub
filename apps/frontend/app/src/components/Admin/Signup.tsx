@@ -41,7 +41,7 @@ const Signup = () => {
         handleSubmit,
         watch,
         reset,
-        formState: {errors}
+        formState: { errors, isValid }
     } = useForm<FormValues>({
         defaultValues: {
             username: "",
@@ -135,9 +135,16 @@ const Signup = () => {
             {
                 statusMessage && (
                     <Box
-                    w="78"
+                    mt="4"
                     p="3"
+                    position="fixed"
+                    left="50%"
+                    top="50%"
+                    transform="translate(-50%, -50%)"
+                    zIndex={2000}
+                    animation={"scale-fade-in"}
                     borderRadius="md"
+                    w="78"
                     bg={statusMessage.type === "error" ? "red.50" : "green.50"}
                     borderWidth="1px"
                     borderColor={statusMessage.type === "error" ? "red.200" : "green.200"}
@@ -163,6 +170,8 @@ const Signup = () => {
                         required: "Username is required"
                         })}
                         variant="outline"
+                        focusRingColor="purple.600"
+                        borderColor="purple.200"
                         placeholder="Username"
                         borderRadius="full"/>
                         <Field.ErrorText>
@@ -182,6 +191,8 @@ const Signup = () => {
                     })}
                     variant="outline"
                     placeholder="Email"
+                    focusRingColor="purple.600"
+                    borderColor="purple.200"
                     borderRadius="full"/>
                     <Field.ErrorText>
                         {errors.email?.message}
@@ -196,6 +207,8 @@ const Signup = () => {
                     variant="outline"
                     placeholder="Password"
                     borderRadius="full"
+                    focusRingColor="purple.600"
+                    borderColor="purple.200"
                     value={value}
                     autoFocus/>
                     {value && (
@@ -218,7 +231,8 @@ const Signup = () => {
                 </Field.Root>
                 <Button
                 type="submit"
-                rounded="full">
+                rounded="full"
+                bg={isValid ? "purple.600" : "purple.300"}>
                     {isUser ? "Sign Up": "Login"}
                 </Button>
             </SimpleGrid>
@@ -234,6 +248,7 @@ const Signup = () => {
                 <Button
                 onClick={toggleMode}
                 rounded="full"
+                bg={"purple.600"}
                 >
                     {isUser ? "Login here" : "Create an account"}
                 </Button>

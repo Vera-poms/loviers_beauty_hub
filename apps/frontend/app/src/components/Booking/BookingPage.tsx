@@ -49,8 +49,6 @@ const BookingPage = () => {
       service: '',
       price: 0,
       notes: '',
-      image_url: '',
-      video_url: '',
     });
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -81,8 +79,8 @@ const BookingPage = () => {
       service: '',
       price: 0,
       notes: '',
-      image_url: '',
-      video_url: '',
+      image_url: null,
+      video_url: null,
     }
   });
 
@@ -143,11 +141,10 @@ const BookingPage = () => {
       await bookAppointment({
         ...data,
         date: formatBackendDate(data.date),
+        image_url: imageFile,
+        video_url: videoFile,
       });
-      showMessage("Booking successful! Check your email.", "success")
       setShowSuccess(true);
-      
-      
     } catch (err: any) {
       const status = err.response?.status
       if (status === 422){
@@ -310,7 +307,15 @@ const BookingPage = () => {
             </Field.Root>
           ))}
 
-          <FileUpload.Root accept={["image/*", "video/*"]} maxFiles={3}>
+          <FileUpload.Root 
+          accept={["image/*", "video/*"]} 
+          maxFiles={3}
+          onFileChange={(details) => {                  
+            for (const file of details.acceptedFiles) {
+              if (file.type.startsWith("image/")) setImageFile(file);
+              else if (file.type.startsWith("video/")) setVideoFile(file);
+            }
+          }}>
             <FileUpload.HiddenInput />
 
             <Flex w="100%" justifyContent="space-between" alignItems="center" pb="0">
@@ -351,12 +356,6 @@ const BookingPage = () => {
             <FileUpload.ItemGroup>
               <FileUpload.Context>
                 {({ acceptedFiles }) => {
-                  useEffect(() => {
-                    for (const file of acceptedFiles) {
-                      if (file.type.startsWith("image/")) setImageFile(file);
-                      else if (file.type.startsWith("video/")) setVideoFile(file);
-                    }
-                  }, [acceptedFiles]);
                   return (
                     <Flex gap="2" flexWrap="wrap" mt="2">
                     {acceptedFiles.map((file) => (
@@ -420,6 +419,8 @@ const BookingPage = () => {
           <Button type="submit" 
           bg={isValid ? "purple.600" : "purple.300"}
           color="white"
+          loading={loading}
+          loadingText="Confirming..."
           _hover={{ bg: isValid ? "purple.700" : "purple.400" }}>
             Confirm Appointment
           </Button>

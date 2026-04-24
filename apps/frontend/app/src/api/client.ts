@@ -45,8 +45,8 @@ export interface Appointment {
     time: string;
     date: string;
     notes?: string;
-    image_url?: string;
-    video_url?: string;
+    image_url?: File | null;
+    video_url?: File | null;
 }
 
 export interface AppointmentPreview {
@@ -126,7 +126,6 @@ export async function fetchServices(){
 export async function bookAppointment(appointment: Appointment){
     const formData = new FormData();
 
-    // append all scalar fields
     formData.append('service_id', appointment.service_id);
     formData.append('sub_category', appointment.sub_category);
     formData.append('name', appointment.name);
@@ -136,8 +135,8 @@ export async function bookAppointment(appointment: Appointment){
     formData.append('date', appointment.date);
     if (appointment.price) formData.append('price', String(appointment.price));
     if (appointment.notes) formData.append('notes', appointment.notes);
-    if (appointment.image_url) formData.append('image_url', appointment.image_url);
-    if (appointment.video_url) formData.append('video_url', appointment.video_url);
+    if (appointment.image_url) formData.append('image', appointment.image_url);
+    if (appointment.video_url) formData.append('video', appointment.video_url);
 
     if (appointment.addons && appointment.addons.length > 0) {
     appointment.addons.forEach((addon: any) => {
